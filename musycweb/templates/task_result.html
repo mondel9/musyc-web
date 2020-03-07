@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Model Fit Result{% endblock %}
+{% block content %}
+    <ul>
+        <li>Dataset: {{ task.dataset.name }} (Uploaded: {{ task.dataset.creation_date }})</li>
+        <li>Drug 1: {{ task.drug1 }}</li>
+        <li>Drug 2: {{ task.drug2 }}</li>
+        <li>Sample: {{ task.sample }}</li>
+        {% if task.task %}
+            <li>Task Start Date: {{ task.task.date_created }}</li>
+            <li>Task End Date: {{ task.task.date_done }}</li>
+        {% endif %}
+    </ul>
+
+    <a class="btn btn-secondary btn-block" href="{% url 'ajax_task_csv' task.task_uuid %}">Download CSV</a>
+    <br>
+
+    <div id="plotly-outer" style="height:450px;border:1px solid #ddd" class="d-flex justify-content-center">
+        <div class="spinner-border" role="status" style="margin:auto">
+          <span class="sr-only">Loading...</span>
+        </div>
+    </div>
+
+    <br>
+    <a class="btn btn-secondary btn-block" href="{% url 'view_dataset' task.dataset_id %}">Back to Dataset</a>
+{% endblock %}
+{% block tailscript %}
+<script src="https://cdn.plot.ly/plotly-1.52.2.min.js"></script>
+<script>
+    $(function() {
+        $.ajax({
+            url: '/task/{{ task.task_uuid }}/surfaceplot',
+            data: null,
+            success: function (data) {
+                $('#plotly-outer').html(data);
+            },
+            error: function() {
+                $('#plotly-outer').html('<div style="margin:auto"><strong>Error</strong></div>');
+            },
+            dataType: 'html'
+        });
+    });
+</script>
+{% endblock %}

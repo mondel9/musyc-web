@@ -1,0 +1,9 @@
+rabbitmq:
+  image: rabbitmq:3-management
+  env_file: musyc.env
+  ports:
+    - "5672:5672"
+    - "15672:15672"
+  volumes:
+    - "./_state/rabbitmq-logs:/var/log/rabbitmq"
+    - "./_state/rabbitmq-data:/var/lib/rabbitmq"

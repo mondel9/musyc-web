@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Dataset: {{ d.name }}{% endblock %}
+{% block content %}
+    Uploaded: {{ d.creation_date }}
+
+    <br><br>
+
+    <table class="table">
+    <thead>
+    <tr>
+        <th>Drug 1</th>
+        <th>Drug 2</th>
+        <th>Sample</th>
+        <th>Status</th>
+    </tr>
+    </thead>
+    {% for task in tasks %}
+        <tr>
+            <td>{{ task.drug1 }}</td>
+            <td>{{ task.drug2 }}</td>
+            <td>{{ task.sample }}</td>
+            <td><div id="task-{{ task.task_uuid }}-status">{% if task.status == 'SUCCESS' %}
+                <a href="{% url 'view_task' task.task_uuid %}">{{ task.status }}</a>
+            {% else %}{{ task.status }}{% endif %}</div></td>
+        </tr>
+    {% endfor %}
+    </table>
+
+    <a class="btn btn-primary btn-block" href="{% url 'ajax_dataset_csv' d.id %}">Download parameters</a>
+
+    <a class="btn btn-secondary btn-block" href="{% url 'index' %}">Back to home page</a>
+
+{% endblock %}
+{% block tailscript %}
+<script>
+var pollStatus = function() {
+    console.log('polling');
+    $.ajax({
+        url: '/dataset/{{ d.id }}/status',
+        data: null,
+        success: function (data) {
+            var checkAgain = false;
+            for (var uuid in data) {
+                if (data.hasOwnProperty(uuid)) {
+                    var updateStr = '';
+                    if (data[uuid] === 'SUCCESS') {
+                        updateStr = '<a href="/task/' + uuid + '">SUCCESS</a>';
+                    } else {
+                        updateStr = data[uuid];
+                        if(data[uuid] !== 'FAILED') {
+                            checkAgain = true;
+                        }
+                    }
+                    $('#task-' + uuid + '-status').html(updateStr);
+                }
+            }
+            if(checkAgain) {
+                setTimeout(pollStatus, 2000);
+            }
+        },
+        dataType: 'json'
+    });
+};
+
+$(function() {
+    pollStatus();
+});
+</script>
+{% endblock %}

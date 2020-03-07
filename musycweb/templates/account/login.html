@@ -1,0 +1,25 @@
+{% extends "../base.html" %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<h1>MuSyC</h1>
+
+<div id="intro-blurb">
+<p class="lead"><strong>Mu</strong>ltidimensional <strong>Sy</strong>nergy of <strong>C</strong>ombinations</p>
+
+<p>MuSyC is an algorithm for quantifying drug effect synergy. It distinguishes synergy of efficacy from synergy of
+potency.</p>
+<p>This service allows you upload your own data to produce fit parameters and examine dose-response surfaces. It is
+free for non-commercial use.</p>
+</div>
+
+<a href="{% url 'about' %}" role="button" class="btn btn-secondary btn-block">Learn more</a>
+<a href="{{ signup_url }}" role="button" class="btn btn-primary btn-block">Create an account</a>
+<br>
+<h2 class="form-signin-heading">Log in</h2>
+{% crispy form %}
+<a href="{% url 'account_reset_password' %}">Forgotten your
+  password?</a>
+
+
+{% endblock %}

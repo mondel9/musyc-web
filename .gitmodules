@@ -1,0 +1,6 @@
+[submodule "musyc"]
+	path = musyc
+	url = https://alubbock@bitbucket.org/meyerct1/musyc_code.git
+[submodule "musyc_code"]
+	path = musyc_code
+	url = https://alubbock@bitbucket.org/meyerct1/musyc_code.git

@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+
+{% block title %}About MuSyC{% endblock %}
+{% block content %}
+<p class="lead">MuSyC is an algorithm for quantifying drug synergy along axes of potency and efficacy.</p>
+
+<a href="{{ account_signup }}" class="btn btn-primary btn-block">Create an account</a>
+<a href="{% url 'index' %}" role="button" class="btn btn-secondary btn-block">Back to home page</a>
+{% endblock %}
