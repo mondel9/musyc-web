@@ -120,13 +120,28 @@ WSGI_APPLICATION = 'musycdjango.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+DATABASE_SETTING = os.environ.get('DJANGO_DATABASE', 'postgres')
+if DATABASE_SETTING == 'postgres':
+    # Bigger batch size is faster but uses more memory
+    DB_MAX_BATCH_SIZE = 100000
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql_psycopg2',
+            'HOST': os.environ.get('POSTGRES_HOST', 'localhost'),
+            'NAME': os.environ.get('POSTGRES_DB', False) or
+                    os.environ.get('POSTGRES_USER', 'postgres'),
+            'USER': os.environ.get('POSTGRES_USER', 'postgres'),
+            'PASSWORD': os.environ['POSTGRES_PASSWORD'],
+            'PORT': os.environ.get('POSTGRES_PORT', '')
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        }
+    }
 
 
 # Password validation
@@ -165,6 +180,8 @@ SITE_ID = 1
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
 STATIC_URL = '/static/'
+if 'DJANGO_STATIC_ROOT' in os.environ:
+    STATIC_ROOT = os.environ['DJANGO_STATIC_ROOT']
 
 
 # Celery
