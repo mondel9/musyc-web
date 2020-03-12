@@ -52,7 +52,7 @@ class CreateDatasetForm(forms.Form):
             raise forms.ValidationError('File is empty!')
 
         try:
-            c = c.decode('utf8')
+            c = c.decode('utf-8-sig')
         except UnicodeDecodeError:
             raise forms.ValidationError('File needs to use Unicode UTF-8 '
                                         'encoding. Is this a CSV file?')
