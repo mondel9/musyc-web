@@ -43,7 +43,8 @@ if not DEBUG and USE_TLS:
     SESSION_COOKIE_SECURE = True
     CRSF_COOKIE_SECURE = True
 
-ALLOWED_HOSTS = []
+HOSTNAME = os.environ.get('DJANGO_HOSTNAME', 'localhost')
+ALLOWED_HOSTS = [HOSTNAME, ]
 
 
 # Application definition
