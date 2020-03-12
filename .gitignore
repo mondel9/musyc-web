@@ -3,3 +3,4 @@ musyc.env
 db.sqlite3
 _state
 **/__pycache__
+.DS_Store

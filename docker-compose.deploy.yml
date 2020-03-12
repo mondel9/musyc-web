@@ -2,11 +2,22 @@ version: '2.1'
 services:
   app:
     build: .
+    env_file:
+      - musyc-app.env
+      - musyc-db.env
+      - musyc-mq.env
+    volumes:
+      - "./_state/datasets:/musyc/_state/datasets"
+      - static-assets:/musyc/_state/static-files
   nginx:
     image: nginx:mainline
     ports:
       - "80:80"
       - "443:443"
+    volumes:
+      - ./nginx.base.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx.site-basic.conf:/etc/nginx/nginx.site.conf:ro
+      - static-assets:/musyc/_state/static-files:ro
   postgres:
     image: postgres:12
     healthcheck:
@@ -14,13 +25,24 @@ services:
       interval: 60s
       timeout: 30s
       retries: 6
+    volumes:
+      - "./_state/postgres-data:/var/lib/postgresql/data"
+    env_file:
+      - musyc-db.env
   rabbitmq:
     image: rabbitmq:3-management
-    env_file: musyc.env
+    env_file:
+      - musyc-mq.env
     volumes:
       - "./_state/rabbitmq-logs:/var/log/rabbitmq"
       - "./_state/rabbitmq-data:/var/lib/rabbitmq"
-
+  worker:
+    build: .
+    entrypoint: ['celery', '-A', 'musycdjango', 'worker', '-c', '4', '-l', 'info']
+    env_file:
+      - musyc-app.env
+      - musyc-db.env
+      - musyc-mq.env
 
 volumes:
   static-assets:
