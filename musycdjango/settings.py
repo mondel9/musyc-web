@@ -129,6 +129,7 @@ ACCOUNT_FORMS = {'login': 'musycweb.forms.CentredAuthForm',
                  'set_password': 'musycweb.forms.SetPasswordForm',
                  'signup': 'musycweb.forms.SignUpForm',
                  'add_email': 'musycweb.forms.AddEmailForm'}
+LOGIN_REDIRECT_URL = 'index'
 
 WSGI_APPLICATION = 'musycdjango.wsgi.application'
 
