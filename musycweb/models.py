@@ -71,7 +71,7 @@ class DatasetTask(models.Model):
     @property
     def status(self):
         if not self._task_set():
-            return 'NOT_LOCATED'
+            return 'QUEUED'
 
         return self.task.status
 
