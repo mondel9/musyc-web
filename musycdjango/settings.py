@@ -95,6 +95,20 @@ TEMPLATES = [
     },
 ]
 
+EMAIL_USE_TLS = True
+EMAIL_ENABLED = True
+try:
+    EMAIL_HOST = os.environ['DJANGO_EMAIL_HOST']
+    EMAIL_PORT = os.environ['DJANGO_EMAIL_PORT']
+    EMAIL_HOST_USER = os.environ['DJANGO_EMAIL_USER']
+    EMAIL_HOST_PASSWORD = os.environ['DJANGO_EMAIL_PASSWORD']
+    DEFAULT_FROM_EMAIL = os.environ.get('DJANGO_EMAIL_FROM', EMAIL_HOST_USER)
+except KeyError:
+    if DEBUG:
+        EMAIL_ENABLED = False
+    else:
+        raise
+
 AUTH_USER_MODEL = 'custom_user.EmailUser'
 AUTHENTICATION_BACKENDS = (
     # Needed to login by username in Django admin, regardless of `allauth`
