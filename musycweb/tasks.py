@@ -13,6 +13,7 @@ from django_celery_results.models import TaskResult
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 import json
+from django.db import transaction
 
 
 @shared_task(bind=True)
@@ -29,7 +30,10 @@ def link_datasetresult(sender, instance=None, created=None, **kwargs):
         return
     if not created:
         return
-    DatasetTask.objects.filter(task_uuid=instance.task_id).update(task=instance)
+    transaction.on_commit(
+        lambda: DatasetTask.objects.filter(
+            task_uuid=instance.task_id).update(task=instance)
+    )
 
 
 @shared_task(bind=True)
@@ -51,12 +55,38 @@ def fit_drug_combination(
         # self.update_state(state='PROGRESS',
         #                   meta={'current': i, 'total': len(filenames)})
 
+    if len(drug1_units) > 1:
+        raise ValueError(f'drug1.units contains multiple values: {", ".join(drug1_units)}')
+
+    if len(drug2_units) > 1:
+        raise ValueError(f'drug1.units contains multiple values: {", ".join(drug2_units)}')
+
+    drug1_units = drug1_units[0]
+    drug2_units = drug2_units[0]
+
     # Convert d1, d2, dip, dip_sd, expt_date back to ndarrays
     d1 = np.array(d1)
     d2 = np.array(d2)
     dip = np.array(dip)
     dip_sd = np.array(dip_sd)
     expt_date = np.array(expt_date)
+
+    if not (d1 > 0).any():
+        raise ValueError('No non-zero concentrations for drug1; single drug '
+                         'expts not yet supported')
+
+    if not (d2 > 0).any():
+        raise ValueError('No non-zero concentrations for drug2; single drug '
+                         'expts not yet supported')
+
+    if drug1_name == drug2_name:
+        raise ValueError('Drug 1 and drug 2 are the same; single drug expts '
+                         'not yet supported')
+
+    if (dip_sd <= 0).any():
+        string = 'WARNING: Combination Screen: Drugs(' + drug1_name + ' ' + drug2_name + ') Sample: ' + sample + ' the effect.95ci column has a value <0!  Confidence intervals (CI) on effect MUST be positive.  If CI is unknown, assign a small finite number to all conditions.'
+        print(string)
+        dip_sd[dip_sd <= 0] = min(dip_sd[dip_sd > 0])
 
     # Consider the special case when one of the drugs has no effect.
     # Flip drug names around so that the no effect drug is drug 1
@@ -113,29 +143,38 @@ def process_dataset(dataset_or_id):
     if 'effect.95ci' not in data.columns:
         data['effect.95ci'] = min(data['effect']/100.)
 
+    # Remove NaNs
+    data = data[data['effect'].notna()]
+
+    # Add SD
+    data['effect.sd'] = data['effect.95ci'] / (2 * 1.96)
+
+    # Canonicalise drug order, alphabetically
+    # i.e. drug1 should come alphabetically first
+    out_of_order = data['drug1'] > data['drug2']
+    data.loc[out_of_order,
+             ['drug1', 'drug1.conc', 'drug1.units', 'drug2', 'drug2.conc', 'drug2.units']] = \
+        data.loc[out_of_order,
+             ['drug2', 'drug2.conc', 'drug2.units', 'drug1', 'drug1.conc', 'drug1.units']]
+
     # Loop through each (drug1, drug2, sample) combination and launch tasks
-    for group_name, _ in data.groupby(['drug1', 'drug2', 'sample']):
+    for group_name, grp_dat in data.groupby(['drug1', 'drug2', 'sample']):
         drug1_name, drug2_name, sample = group_name
-        # Subset data for doses for fitting
-        d1, d2, dip, dip_sd = subset_data(data, drug1_name, drug2_name, sample)
-        drug1_units, drug2_units, expt_date = subset_expt_info(data, drug1_name,
-                                                               drug2_name,
-                                                               sample)
 
         task = fit_drug_combination.delay(
             dataset_id=dataset.id,
             drug1_name=drug1_name,
             drug2_name=drug2_name,
             sample=sample,
-            d1=d1.tolist(),
-            d2=d2.tolist(),
-            dip=dip.tolist(),
-            dip_sd=dip_sd.tolist(),
+            d1=grp_dat['drug1.conc'].tolist(),
+            d2=grp_dat['drug2.conc'].tolist(),
+            dip=grp_dat['effect'].tolist(),
+            dip_sd=grp_dat['effect.sd'].tolist(),
             E_fix=None,
             E_bnd=None,
-            drug1_units=drug1_units,
-            drug2_units=drug2_units,
-            expt_date=expt_date.tolist(),
+            drug1_units=grp_dat['drug1.units'].unique().tolist(),
+            drug2_units=grp_dat['drug2.units'].unique().tolist(),
+            expt_date=grp_dat['expt.date'].unique().tolist(),
             output_dir=None,
             expt=dataset.name,
             metric_name=dataset.metric_name,
@@ -151,3 +190,29 @@ def process_dataset(dataset_or_id):
             task_uuid=task.id
         )
         dt.save()
+
+
+def attach_missing_taskresults(tasklist=None):
+    if tasklist is None:
+        tasks_with_missing = TaskResult.objects.filter(task=None)
+    else:
+        tasks_with_missing = [t.task_uuid for t in tasklist if t.task is None]
+    if not tasks_with_missing:
+        return tasklist
+    taskresults = {
+        tr.task_id: tr
+        for tr in
+        TaskResult.objects.filter(task_id__in=tasks_with_missing).order_by()
+    }
+    for t in tasklist:
+        if t.task:
+            continue
+        try:
+            tr = taskresults[t.task_uuid]
+        except KeyError:
+            continue
+        t.update(task=tr)
+        # Update directly to avoid DB refresh
+        t.task = tr
+
+    return tasklist

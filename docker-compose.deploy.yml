@@ -38,7 +38,7 @@ services:
       - "./_state/rabbitmq-data:/var/lib/rabbitmq"
   worker:
     build: .
-    entrypoint: ['celery', '-A', 'musycdjango', 'worker', '-c', '4', '-l', 'info']
+    entrypoint: ['celery', '-A', 'musycdjango', 'worker', '-c', '4', '-l', 'info', '--uid', 'www-data', '--gid', 'www-data']
     env_file:
       - musyc-app.env
       - musyc-db.env

@@ -34,7 +34,7 @@ class DatasetTask(models.Model):
     task = models.ForeignKey(TaskResult, on_delete=models.CASCADE, null=True)
     task_uuid = models.TextField()
     FIELDS_CSV = (
-        'dataset_name', 'task_uuid',
+        'dataset_name', 'task_uuid', 'task_status',
         'sample', 'expt', 'fit_method', 'drug1_name', 'drug2_name',
         'metric_name', 'init_rndm_seed', 'fit_beta', 'boundary_sampling',
         'max_conc_d1', 'max_conc_d2', 'min_conc_d1', 'min_conc_d2',
@@ -57,33 +57,24 @@ class DatasetTask(models.Model):
         return f'{self.task_uuid} [DS:{self.dataset_id}] ' \
                f'<{self.dataset.owner.email}>'
 
-    def _task_set(self):
-        if self.task:
-            return True
-        try:
-            tr = TaskResult.objects.get(task_id=self.task_uuid)
-            self.task = tr
-            self.save()
-            return True
-        except TaskResult.DoesNotExist:
-            return False
-
     @property
     def status(self):
-        if not self._task_set():
+        if not self.task:
             return 'QUEUED'
 
         return self.task.status
 
     @property
     def result_dict(self):
-        if not self._task_set():
-            return None
-
-        if self.task.status != 'SUCCESS':
-            return None
-
-        d = json.loads(self.task.result)
+        if not self.task or self.task.status != 'SUCCESS':
+            d = dict(
+                drug1_name=self.drug1,
+                drug2_name=self.drug2,
+                sample=self.sample
+            )
+        else:
+            d = json.loads(self.task.result)
+        d['task_status'] = self.status
         d['dataset_name'] = self.dataset.name
         d['task_uuid'] = self.task_uuid
         return d
@@ -95,7 +86,7 @@ class DatasetTask(models.Model):
     @property
     def result_csv_line(self):
         d = self.result_dict
-        return ','.join('"'+str(d[k]).replace('"', '\"')+'"'
+        return ','.join('"'+str(d.get(k, '')).replace('"', '\"')+'"'
                         for k in self.FIELDS_CSV)
 
     @property

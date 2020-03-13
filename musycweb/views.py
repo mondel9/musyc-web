@@ -63,9 +63,13 @@ def view_dataset(request, dataset_id):
     if d.owner_id != request.user.id and not request.user.is_staff:
         raise Http404()
 
-    tasks = DatasetTask.objects.filter(dataset=d).select_related('task')
+    tasks = DatasetTask.objects.filter(dataset=d).select_related(
+        'task').order_by('drug1', 'drug2', 'sample')
+    needs_refresh = any(t.status not in ('SUCCESS', 'FAILURE') for t in
+                        tasks)
 
-    return render(request, 'dataset.html', {'d': d, 'tasks': tasks})
+    return render(request, 'dataset.html', {'d': d, 'tasks': tasks,
+                                            'needs_refresh': needs_refresh})
 
 
 @login_required

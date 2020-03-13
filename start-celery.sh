@@ -1,2 +1,2 @@
 #!/bin/bash
-celery -A musycdjango worker -l info
+celery -A musycdjango worker -l info -c 5
