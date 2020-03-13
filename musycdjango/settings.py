@@ -11,6 +11,10 @@ https://docs.djangoproject.com/en/3.0/ref/settings/
 """
 
 import os
+try:
+    import debug_toolbar
+except ImportError:
+    debug_toolbar = None
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -45,7 +49,7 @@ if not DEBUG and USE_TLS:
 
 HOSTNAME = os.environ.get('DJANGO_HOSTNAME', 'localhost')
 ALLOWED_HOSTS = [HOSTNAME, ]
-
+INTERNAL_IPS = ['127.0.0.1']
 
 # Application definition
 
@@ -64,6 +68,8 @@ INSTALLED_APPS = [
     'crispy_forms',
     'django_celery_results'
 ]
+if DEBUG and debug_toolbar:
+    INSTALLED_APPS += ['debug_toolbar']
 
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
 
@@ -76,6 +82,8 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+if DEBUG and debug_toolbar:
+    MIDDLEWARE += ['debug_toolbar.middleware.DebugToolbarMiddleware']
 
 ROOT_URLCONF = 'musycdjango.urls'
 
