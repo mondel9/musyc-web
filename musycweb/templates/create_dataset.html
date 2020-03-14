@@ -23,7 +23,13 @@
 <script>
 var $dsetForm = $('#create-dataset-form');
 var $modal = $('.modal');
+var uploadInProgress = false;
+window.onbeforeunload = function() {
+    if(!uploadInProgress) return;
+    return "Your upload will be interrupted if you leave the page";
+};
 $modal.on('shown.bs.modal', function() {
+    uploadInProgress = true;
     $.ajax({
         url: "{% url 'create_dataset' %}?ajax",
         type: "POST",
@@ -31,6 +37,7 @@ $modal.on('shown.bs.modal', function() {
         processData: false,
         contentType: false,
         success: function(data) {
+            uploadInProgress = false;
             if (!(data['success'])) {
                 $dsetForm.replaceWith(data['form_html']);
                 $modal.modal('hide');
@@ -40,6 +47,7 @@ $modal.on('shown.bs.modal', function() {
             }
         },
         error: function () {
+            uploadInProgress = false;
             $modal.modal('hide');
             alert('An error occurred submitting the form');
         }
