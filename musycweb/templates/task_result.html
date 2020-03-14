@@ -13,6 +13,7 @@
         {% endif %}
     </ul>
 
+    {% if task.status == 'SUCCESS' %}
     <a class="btn btn-secondary btn-block" href="{% url 'ajax_task_csv' task.task_uuid %}">Download CSV</a>
     <br>
 
@@ -21,7 +22,14 @@
           <span class="sr-only">Loading...</span>
         </div>
     </div>
-
+    {% elif task.status == 'FAILURE' %}
+        <div class="text-center alert alert-danger">
+            <h3>{{ task.status }}</h3>
+            <p>{{ task.error_message }}</p>
+        </div>
+    {% else %}
+        <div class="text-center"><h3>{{ task.status }}</h3></div>
+    {% endif %}
     <br>
     <a class="btn btn-secondary btn-block" href="{% url 'view_dataset' task.dataset_id %}">Back to Dataset</a>
     <br>

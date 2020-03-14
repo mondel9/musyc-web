@@ -65,6 +65,17 @@ class DatasetTask(models.Model):
         return self.task.status
 
     @property
+    def error_message(self):
+        if self.status != 'FAILURE':
+            return None
+
+        d = json.loads(self.task.result)
+        if d.get('exc_type', '') == 'DataError' and 'exc_message' in d:
+            return d['exc_message'][0]
+        else:
+            return 'Unknown error'
+
+    @property
     def result_dict(self):
         if not self.task or self.task.status != 'SUCCESS':
             d = dict(

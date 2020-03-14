@@ -10,6 +10,10 @@ from django.dispatch import receiver
 from django.db import transaction
 
 
+class DataError(Exception):
+    pass
+
+
 @shared_task(bind=True)
 def test_add(self, x, y, sleep=0):
     if not self.request.called_directly:
@@ -50,10 +54,10 @@ def fit_drug_combination(
         #                   meta={'current': i, 'total': len(filenames)})
 
     if len(drug1_units) > 1:
-        raise ValueError(f'drug1.units contains multiple values: {", ".join(drug1_units)}')
+        raise DataError(f'drug1.units contains multiple values: {", ".join(drug1_units)}')
 
     if len(drug2_units) > 1:
-        raise ValueError(f'drug1.units contains multiple values: {", ".join(drug2_units)}')
+        raise DataError(f'drug1.units contains multiple values: {", ".join(drug2_units)}')
 
     drug1_units = drug1_units[0]
     drug2_units = drug2_units[0]
@@ -66,16 +70,16 @@ def fit_drug_combination(
     expt_date = np.array(expt_date)
 
     if not (d1 > 0).any():
-        raise ValueError('No non-zero concentrations for drug1; single drug '
-                         'expts not yet supported')
+        raise DataError('No non-zero concentrations for drug1; single drug '
+                        'expts not yet supported')
 
     if not (d2 > 0).any():
-        raise ValueError('No non-zero concentrations for drug2; single drug '
-                         'expts not yet supported')
+        raise DataError('No non-zero concentrations for drug2; single drug '
+                        'expts not yet supported')
 
     if drug1_name == drug2_name:
-        raise ValueError('Drug 1 and drug 2 are the same; single drug expts '
-                         'not yet supported')
+        raise DataError('Drug 1 and drug 2 are the same; single drug expts '
+                        'not yet supported')
 
     if (dip_sd <= 0).any():
         string = 'WARNING: Combination Screen: Drugs(' + drug1_name + ' ' + drug2_name + ') Sample: ' + sample + ' the effect.95ci column has a value <0!  Confidence intervals (CI) on effect MUST be positive.  If CI is unknown, assign a small finite number to all conditions.'
