@@ -6,7 +6,10 @@
 
     <br><br>
 
-    <table class="table" id="results-table">
+    <div id="results-table-spinner" class="spinner-border" role="status" style="margin:auto">
+      <span class="sr-only">Loading...</span>
+    </div>
+    <table class="table" id="results-table" style="display:none">
     <thead>
     <tr>
         <th>Drug 1</th>
@@ -32,6 +35,8 @@
     <a class="btn btn-primary btn-block" href="{% url 'ajax_dataset_csv' d.id %}">Download parameters</a>
 
     <a class="btn btn-secondary btn-block" href="{% url 'index' %}">Back to home page</a>
+
+    <br>
 
 {% endblock %}
 {% block css %}<link rel="stylesheet" href="//cdn.datatables.net/1.10.20/css/jquery.dataTables.min.css">{% endblock %}
@@ -74,7 +79,8 @@ $(function() {
 <script src="//cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js"></script>
 <script>
 $(function() {
-    $('#results-table').dataTable();
+    $('#results-table').dataTable().show();
+    $('#results-table-spinner').hide();
 });
 </script>
 {% endblock %}
