@@ -14,14 +14,13 @@
     </ul>
 
     {% if task.status == 'SUCCESS' %}
-    <a class="btn btn-secondary btn-block" href="{% url 'ajax_task_csv' task.task_uuid %}">Download CSV</a>
-    <br>
 
     <div id="plotly-outer" style="height:450px;border:1px solid #ddd" class="d-flex justify-content-center">
         <div class="spinner-border" role="status" style="margin:auto">
           <span class="sr-only">Loading...</span>
         </div>
-    </div>
+    </div><br>
+    <a class="btn btn-secondary btn-block" href="{% url 'ajax_task_csv' task.task_uuid %}">Download parameters (CSV)</a>
     {% elif task.status == 'FAILURE' %}
         <div class="text-center alert alert-danger">
             <h3>{{ task.status }}</h3>
