@@ -43,6 +43,9 @@
             {% for message in messages %}
                 <div class="alert alert-{% if 'error' in message.tags %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissable" role="alert"{% if forloop.first %}style="margin-top:20px"{% endif %}><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>{{ message }}</div>
             {% endfor %}
+        <div id="page-loading" class="spinner-border" role="status" style="margin-top:25px;float:right;display:none">
+            <span class="sr-only">Loading...</span>
+        </div>
             <h1 class="page-header" style="margin-top:20px">{% block title %}{% endblock %}</h1>
             {% block content %}{% endblock %}
         </div>

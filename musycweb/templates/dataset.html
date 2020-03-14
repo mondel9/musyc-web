@@ -2,13 +2,17 @@
 
 {% block title %}Dataset: {{ d.name }}{% endblock %}
 {% block content %}
-    Uploaded: {{ d.creation_date }}
-
-    <br><br>
-
-    <div id="results-table-spinner" class="spinner-border" role="status" style="margin:auto">
-      <span class="sr-only">Loading...</span>
+    <div class="progress">
+        <div id="progress-inprogress" class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+        <div id="progress-success" class="progress-bar bg-success" role="progressbar" style="width: 0" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+        <div id="progress-failed" class="progress-bar bg-danger" role="progressbar" style="width: 0" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
     </div>
+    <div id="progress-rightlabel" style="float:right"></div>
+    <div id="progress-leftlabel"></div>
+
+
+    <br>
+
     <table class="table" id="results-table" style="display:none">
     <thead>
     <tr>
@@ -48,29 +52,64 @@ var pollStatus = function() {
         url: '{% url 'ajax_task_status' d.id %}',
         data: null,
         success: function (data) {
-            var checkAgain = false;
+            var checkAgain = false, numQueued = 0, numStarted = 0, numFailed = 0, numComplete = 0;
             for (var uuid in data) {
                 if (data.hasOwnProperty(uuid)) {
                     var updateStr = '';
                     if (data[uuid] === 'SUCCESS') {
+                        numComplete++;
                         updateStr = '<a href="/task/' + uuid + '">SUCCESS</a>';
                     } else {
                         updateStr = data[uuid];
-                        if(data[uuid] !== 'FAILURE') {
+                        if (data[uuid] === 'FAILURE') {
+                            numFailed++;
+                        } else if (data[uuid] === 'QUEUED') {
+                            numQueued++;
+                            checkAgain = true;
+                        } else {
+                            numStarted++;
                             checkAgain = true;
                         }
                     }
                     $('#task-' + uuid + '-status').html(updateStr);
                 }
             }
+            setProgress(numQueued, numStarted, numFailed, numComplete);
             if(checkAgain) {
-                setTimeout(pollStatus, 2000);
+                setTimeout(pollStatus, 4000);
             }
         },
         dataType: 'json'
     });
 };
+var setProgress = function(numQueued, numStarted, numFailed, numComplete) {
+    if(numQueued > 0 || numStarted > 0) {
+        var numTerminal = numFailed + numComplete;
+        var numTotal = numQueued + numStarted + numTerminal;
+        var progress = Math.round(numTerminal / numTotal * 100);
+        // In progress
+        $('#progress-inprogress').css('width', +progress+'%').attr('aria-valuenow', progress);
+        if(numTerminal === 0) {
+            $('#progress-leftlabel').text('Waiting in queue...')
+        } else {
+            $('#progress-leftlabel').text(numTerminal + ' of ' + numTotal + ' fits complete');
+        }
+    } else {
+        // Complete
+        var failedPc = numFailed / (numFailed + numComplete) * 100;
+        $('#progress-inprogress').css('width', '0').attr('aria-valuenow', 0);
+        $('#progress-failed').css('width', failedPc + '%').attr('aria-valuenow', failedPc);
+        $('#progress-success').css('width', 100-failedPc + '%').attr('aria-valuenow', 100-failedPc);
+        if(numFailed > 0) {
+            $('#progress-leftlabel').text(numComplete + ' fits successful');
+            $('#progress-rightlabel').text(numFailed + ' fits failed');
+        } else {
+            $('#progress-leftlabel').text('Fitting completed successfully')
+        }
+    }
+};
 $(function() {
+    $('#page-loading').show();
     $('#results-table').dataTable({
         ajax: '{% url 'ajax_tasks' d.id %}',
         columns: [
@@ -85,16 +124,26 @@ $(function() {
             }}
         ],
         initComplete: function(settings, json) {
+            $('#page-loading').hide();
+            var numQueued = 0, numStarted = 0, numFailed = 0, numComplete = 0;
             for(var i=0; i<json['data'].length; i++) {
                 var status = json['data'][i][3];
-                if(status !== 'SUCCESS' && status !== 'FAILURE') {
-                    pollStatus();
-                    break;
+                if (status === 'SUCCESS') {
+                    numComplete++;
+                } else if (status === 'FAILURE') {
+                    numFailed++;
+                } else if (status === 'QUEUED') {
+                    numQueued++;
+                } else {
+                    numStarted++;
                 }
+            }
+            setProgress(numQueued, numStarted, numFailed, numComplete);
+            if(numQueued > 0 || numStarted > 0) {
+                setTimeout(pollStatus, 2000);
             }
         }
     }).show();
-    $('#results-table-spinner').hide();
 });
 </script>
 {% endblock %}
