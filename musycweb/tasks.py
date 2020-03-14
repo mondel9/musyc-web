@@ -131,6 +131,17 @@ def fit_drug_combination(
     return T
 
 
+def _swap_drug1_drug2(data):
+    return data.rename(columns={
+        'drug1': 'drug2',
+        'drug2': 'drug1',
+        'drug1.conc': 'drug2.conc',
+        'drug2.conc': 'drug1.conc',
+        'drug1.units': 'drug2.units',
+        'drug2.units': 'drug1.units'
+    })
+
+
 def process_dataset(dataset_or_id):
     """ Split a dataset into drug combinations and submit as tasks """
     if isinstance(dataset_or_id, int):
@@ -152,29 +163,53 @@ def process_dataset(dataset_or_id):
     # Canonicalise drug order, alphabetically
     # i.e. drug1 should come alphabetically first
     out_of_order = data['drug1'] > data['drug2']
-    data.loc[out_of_order,
-             ['drug1', 'drug1.conc', 'drug1.units', 'drug2', 'drug2.conc', 'drug2.units']] = \
-        data.loc[out_of_order,
-             ['drug2', 'drug2.conc', 'drug2.units', 'drug1', 'drug1.conc', 'drug1.units']]
+    data.loc[out_of_order, ['drug1', 'drug1.conc', 'drug1.units',
+                            'drug2', 'drug2.conc', 'drug2.units']] = \
+                data.loc[out_of_order, ['drug2', 'drug2.conc', 'drug2.units',
+                                        'drug1', 'drug1.conc', 'drug1.units']]
+
+    # Control filter (no drug)
+    data_ctrl = data.loc[(data['drug1.conc'] == 0) & (data['drug2.conc'] == 0)]
+
+    # SA = Single agent filter (exactly one drug added)
+    data_sa_1 = data.loc[(data['drug1.conc'] == 0) & (data['drug2.conc'] != 0)]
+    data_sa_2 = data.loc[(data['drug1.conc'] != 0) & (data['drug2.conc'] == 0)]
+
+    # Dual agent (two drugs added in non-zero concentration
+    data_expt = data.loc[(data['drug1.conc'] != 0) & (data['drug2.conc'] != 0)]
 
     # Loop through each (drug1, drug2, sample) combination and launch tasks
-    for group_name, grp_dat in data.groupby(['drug1', 'drug2', 'sample']):
+    for group_name, grp_dat in data_expt.groupby(['drug1', 'drug2', 'sample']):
         drug1_name, drug2_name, sample = group_name
+
+        cmb_dat = pd.concat([
+            grp_dat,
+            data_ctrl.loc[data_ctrl['sample'] == sample],
+            data_sa_1.loc[(data_sa_1['sample'] == sample) &
+                          (data_sa_1['drug2'] == drug2_name)],
+            data_sa_2.loc[(data_sa_2['sample'] == sample) &
+                          (data_sa_2['drug1'] == drug1_name)],
+            # Need to swap drugs in single agent case where drug is in wrong col
+            _swap_drug1_drug2(data_sa_1.loc[(data_sa_1['sample'] == sample) &
+                              (data_sa_1['drug2'] == drug1_name)]),
+            _swap_drug1_drug2(data_sa_2.loc[(data_sa_2['sample'] == sample) &
+                              (data_sa_2['drug1'] == drug2_name)])
+        ])
 
         task = fit_drug_combination.delay(
             dataset_id=dataset.id,
             drug1_name=drug1_name,
             drug2_name=drug2_name,
             sample=sample,
-            d1=grp_dat['drug1.conc'].tolist(),
-            d2=grp_dat['drug2.conc'].tolist(),
-            dip=grp_dat['effect'].tolist(),
-            dip_sd=grp_dat['effect.sd'].tolist(),
+            d1=cmb_dat['drug1.conc'].tolist(),
+            d2=cmb_dat['drug2.conc'].tolist(),
+            dip=cmb_dat['effect'].tolist(),
+            dip_sd=cmb_dat['effect.sd'].tolist(),
             E_fix=None,
             E_bnd=None,
-            drug1_units=grp_dat['drug1.units'].unique().tolist(),
-            drug2_units=grp_dat['drug2.units'].unique().tolist(),
-            expt_date=grp_dat['expt.date'].unique().tolist(),
+            drug1_units=cmb_dat['drug1.units'].unique().tolist(),
+            drug2_units=cmb_dat['drug2.units'].unique().tolist(),
+            expt_date=cmb_dat['expt.date'].unique().tolist(),
             output_dir=None,
             expt=dataset.name,
             metric_name=dataset.metric_name,
