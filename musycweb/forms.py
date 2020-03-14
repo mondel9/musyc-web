@@ -40,7 +40,7 @@ class CreateDatasetForm(forms.Form):
         super(CreateDatasetForm, self).__init__(*args, **kwargs)
 
         self.helper = FormHelper()
-        self.helper.form_class = 'form-vertical'
+        self.helper.form_id = 'create-dataset-form'
         self.helper.add_input(Submit('submit', 'Create Dataset',
                                      css_class='btn-block'))
 

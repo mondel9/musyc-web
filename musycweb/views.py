@@ -6,8 +6,10 @@ from .forms import CreateDatasetForm
 from .models import Dataset, DatasetTask
 from .tasks import process_dataset
 from django_celery_results.models import TaskResult
+from django.template.context_processors import csrf
 from musyc_code.SynergyCalculator.doseResponseSurfPlot import \
     plotDoseResponseSurf
+from crispy_forms.utils import render_crispy_form
 import numpy as np
 import plotly.offline
 
@@ -43,14 +45,23 @@ def create_dataset(request):
             # Fire off the fitting tasks
             process_dataset(d)
 
-            return HttpResponseRedirect(reverse(
-                'view_dataset', kwargs={'dataset_id': d.id}
-            ))
+            if 'ajax' in request.GET:
+                return JsonResponse({'success': True, 'dataset_id': d.id})
+            else:
+                return HttpResponseRedirect(reverse(
+                    'view_dataset', kwargs={'dataset_id': d.id}
+                ))
     else:
         form = CreateDatasetForm()
-    return render(request, 'create_dataset.html', {
-        'form': form
-    })
+    if 'ajax' in request.GET:
+        return JsonResponse({
+            'success': False,
+            'form_html': render_crispy_form(form, context=csrf(request))
+        })
+    else:
+        return render(request, 'create_dataset.html', {
+            'form': form
+        })
 
 
 @login_required

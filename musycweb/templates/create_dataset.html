@@ -5,4 +5,55 @@
 
 {% block content %}
     {% crispy form %}
+
+<div class="modal fade" tabindex="-1" role="dialog" data-keyboard="false" data-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered justify-content-center" role="document">
+        <div style="background-color: rgba(0, 0, 0, 0.7); color:#fff;padding: 20px;margin:auto" class="text-center">
+            <h1>Uploading</h1>
+            <p>Please do not navigate away from this page</p>
+            <div class="spinner-border" role="status">
+              <span class="sr-only">Loading...</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block tailscript %}
+<script>
+var $dsetForm = $('#create-dataset-form');
+var $modal = $('.modal');
+$modal.on('shown.bs.modal', function() {
+    $.ajax({
+        url: "{% url 'create_dataset' %}?ajax",
+        type: "POST",
+        data: new FormData($dsetForm.get(0)),
+        processData: false,
+        contentType: false,
+        success: function(data) {
+            if (!(data['success'])) {
+                $dsetForm.replaceWith(data['form_html']);
+                $modal.modal('hide');
+            }
+            else {
+                window.location.href = '/dataset/' + data['dataset_id'];
+            }
+        },
+        error: function () {
+            $modal.modal('hide');
+            alert('An error occurred submitting the form');
+        }
+    });
+}).on('hidden.bs.modal', function() {
+   $dsetForm.find('input[type=submit]').prop('disabled', false);
+});
+
+$dsetForm.submit(function(e) {
+    if( window.FormData === undefined ) return;
+    e.preventDefault();
+    $dsetForm.find('input[type=submit]').prop('disabled', true);
+    $modal.modal('show');
+})
+
+</script>
 {% endblock %}

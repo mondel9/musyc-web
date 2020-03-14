@@ -45,7 +45,7 @@
 <script>
 var pollStatus = function() {
     $.ajax({
-        url: '/dataset/{{ d.id }}/status',
+        url: '{% url 'ajax_task_status' d.id %}',
         data: null,
         success: function (data) {
             var checkAgain = false;
