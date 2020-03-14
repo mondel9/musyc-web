@@ -3,16 +3,10 @@ import time
 from .models import Dataset, DatasetTask
 import pandas as pd
 import numpy as np
-from musyc_code.SynergyCalculator.gatherData import subset_data,\
-    subset_expt_info
 from musyc_code.SynergyCalculator.SynergyCalculator import MuSyC_2D
-import os
-from django.conf import settings
-import uuid
 from django_celery_results.models import TaskResult
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-import json
 from django.db import transaction
 
 
