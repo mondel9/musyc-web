@@ -74,13 +74,24 @@ def view_dataset(request, dataset_id):
     if d.owner_id != request.user.id and not request.user.is_staff:
         raise Http404()
 
+    return render(request, 'dataset.html', {'d': d})
+
+
+@login_required
+def ajax_tasks(request, dataset_id):
+    try:
+        d = Dataset.objects.get(id=dataset_id)
+    except Dataset.DoesNotExist:
+        raise Http404()
+
+    if d.owner_id != request.user.id and not request.user.is_staff:
+        raise Http404()
+
     tasks = DatasetTask.objects.filter(dataset=d).select_related(
         'task').order_by('drug1', 'drug2', 'sample')
-    needs_refresh = any(t.status not in ('SUCCESS', 'FAILURE') for t in
-                        tasks)
 
-    return render(request, 'dataset.html', {'d': d, 'tasks': tasks,
-                                            'needs_refresh': needs_refresh})
+    return JsonResponse({'data': [
+        [t.drug1, t.drug2, t.sample, t.status, t.task_uuid] for t in tasks]})
 
 
 @login_required

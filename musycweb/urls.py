@@ -12,6 +12,7 @@ urlpatterns = [
     path('task/<uuid:task_id>', views.view_task, name='view_task'),
     path('task/<uuid:task_id>/csv', views.ajax_task_csv, name='ajax_task_csv'),
     path('task/<uuid:task_id>/surfaceplot', views.ajax_surface_plot, name='ajax_surface_plot'),
+    path('dataset/<int:dataset_id>/tasks', views.ajax_tasks, name='ajax_tasks'),
     path('dataset/<int:dataset_id>/status', views.ajax_task_status, name='ajax_task_status')
 ]
 

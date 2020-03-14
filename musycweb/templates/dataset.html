@@ -41,7 +41,7 @@
 {% endblock %}
 {% block css %}<link rel="stylesheet" href="//cdn.datatables.net/1.10.20/css/jquery.dataTables.min.css">{% endblock %}
 {% block tailscript %}
-{% if needs_refresh %}
+<script src="//cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js"></script>
 <script>
 var pollStatus = function() {
     $.ajax({
@@ -70,16 +70,30 @@ var pollStatus = function() {
         dataType: 'json'
     });
 };
-
 $(function() {
-    pollStatus();
-});
-</script>
-{% endif %}
-<script src="//cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js"></script>
-<script>
-$(function() {
-    $('#results-table').dataTable().show();
+    $('#results-table').dataTable({
+        ajax: '{% url 'ajax_tasks' d.id %}',
+        columns: [
+            {},
+            {},
+            {},
+            {render:function ( data, type, row, meta ) {
+                if(data === 'SUCCESS' || data === 'FAILURE')
+                    return '<div id="task-'+row[4]+'-status"><a href="/task/'+row[4]+'">'+data+'</a></div>';
+                else
+                    return '<div id="task-'+row[4]+'-status">'+data+'</div>'
+            }}
+        ],
+        initComplete: function(settings, json) {
+            for(var i=0; i<json['data'].length; i++) {
+                var status = json['data'][i][3];
+                if(status !== 'SUCCESS' && status !== 'FAILURE') {
+                    pollStatus();
+                    break;
+                }
+            }
+        }
+    }).show();
     $('#results-table-spinner').hide();
 });
 </script>
