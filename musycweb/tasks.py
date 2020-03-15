@@ -115,6 +115,8 @@ def fit_drug_combination(
                  # other_metrics=other_metrics
                  )
 
+    T['E_fix'] = E_fix
+    T['E_bnd'] = E_bnd
     T['drug1_units'] = drug1_units
     T['drug2_units'] = drug2_units
     T['d1'] = d1.tolist()
@@ -157,6 +159,19 @@ def process_dataset(dataset_or_id):
 
     # Add SD
     data['effect.sd'] = data['effect.95ci'] / (2 * 1.96)
+
+    # Global fitting bounds
+    e_fix = None
+    e_bnd = None
+    if dataset.emax_lower or dataset.emax_upper:
+        if dataset.emax_lower == dataset.emax_upper:
+            # Fixed value
+            e_fix = [dataset.emax_lower] * 4
+        else:
+            # Constraint
+            lwr = dataset.emax_lower if dataset.emax_lower else -np.Inf
+            upr = dataset.emax_upper if dataset.emax_upper else np.Inf
+            e_bnd = [[lwr] * 4, [upr] * 4]
 
     # Canonicalise drug order, alphabetically
     # i.e. drug1 should come alphabetically first
@@ -203,8 +218,8 @@ def process_dataset(dataset_or_id):
             d2=cmb_dat['drug2.conc'].tolist(),
             dip=cmb_dat['effect'].tolist(),
             dip_sd=cmb_dat['effect.sd'].tolist(),
-            E_fix=None,
-            E_bnd=None,
+            E_fix=e_fix,
+            E_bnd=e_bnd,
             drug1_units=cmb_dat['drug1.units'].unique().tolist(),
             drug2_units=cmb_dat['drug2.units'].unique().tolist(),
             expt_date=cmb_dat['expt.date'].unique().tolist(),

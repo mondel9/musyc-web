@@ -38,7 +38,11 @@ def create_dataset(request):
             d = Dataset(
                 owner=request.user,
                 name=form.cleaned_data['name'],
-                file=request.FILES['file']
+                file=form.cleaned_data['file'],
+                orientation=form.cleaned_data['orientation'],
+                metric_name=form.cleaned_data['metric_name'],
+                emax_lower=form.cleaned_data['emax_lower_bound'],
+                emax_upper=form.cleaned_data['emax_upper_bound']
             )
             d.save()
 

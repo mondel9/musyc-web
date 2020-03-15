@@ -21,6 +21,8 @@ class Dataset(models.Model):
         editable=False
     )
     metric_name = models.TextField(default='Percent effect', editable=False)
+    emax_lower = models.FloatField(default=None, null=True, editable=False)
+    emax_upper = models.FloatField(default=None, null=True, editable=False)
 
     def __str__(self):
         return f'[{self.id}] {self.name} <{self.owner.email}>'

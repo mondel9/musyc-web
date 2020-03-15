@@ -8,6 +8,8 @@
         <li>Drug 2: {{ task.drug2 }}</li>
         <li>Sample: {{ task.sample }}</li>
         {% if task.task %}
+            {% if task.result_dict.E_fix %}<li>Fixed E<sub>max</sub>: {{ task.result_dict.E_fix }}</li>{% endif %}
+            {% if task.result_dict.E_bnd %}<li>E<sub>max</sub> bounds: {{ task.result_dict.E_bnd }}</li>{% endif %}
             <li>Task Start Date: {{ task.task.date_created }}</li>
             <li>Task End Date: {{ task.task.date_done }}</li>
         {% endif %}

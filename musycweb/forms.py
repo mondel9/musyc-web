@@ -29,12 +29,16 @@ class CreateDatasetForm(forms.Form):
     metric_name = forms.CharField(
         max_length=32,
         initial=Dataset._meta.get_field('metric_name').default)
-    # emin_fixed = forms.FloatField(required=False)
-    # emax_fixed = forms.FloatField(required=False)
-    # emin_min = forms.FloatField(required=False)
-    # emax_min = forms.FloatField(required=False)
-    # emin_max = forms.FloatField(required=False)
-    # emax_max = forms.FloatField(required=False)
+    emax_constraint = forms.ChoiceField(
+        choices=(('none', 'Unconstrained'),
+                 ('fixed', 'Fixed value'),
+                 ('bounded', 'Upper/lower bounds')),
+        widget=forms.RadioSelect,
+        initial='none'
+    )
+    emax_fixed_value = forms.FloatField(required=False)
+    emax_lower_bound = forms.FloatField(required=False)
+    emax_upper_bound = forms.FloatField(required=False)
 
     def __init__(self, *args, **kwargs):
         super(CreateDatasetForm, self).__init__(*args, **kwargs)
@@ -44,7 +48,7 @@ class CreateDatasetForm(forms.Form):
         self.helper.add_input(Submit('submit', 'Create Dataset',
                                      css_class='btn-block'))
 
-    def clean_file(self, ):
+    def clean_file(self):
         f = self.cleaned_data['file']
         try:
             c = next(f.chunks())
@@ -69,6 +73,51 @@ class CreateDatasetForm(forms.Form):
             raise forms.ValidationError(
                 f'Missing required fields: {", ".join(missing_headers)}'
             )
+
+        return f
+
+    def clean_emax_fixed_value(self):
+        if self.cleaned_data['emax_constraint'] in ('none', 'bounded'):
+            return None
+
+        if self.cleaned_data['emax_constraint'] == 'fixed':
+            if self.cleaned_data['emax_fixed_value'] is None:
+                raise forms.ValidationError(
+                    'Value required, or switch to unconstrained'
+                )
+
+        return self.cleaned_data['emax_fixed_value']
+
+    def clean_emax_lower_bound(self):
+        if self.cleaned_data['emax_constraint'] == 'none':
+            return None
+
+        if self.cleaned_data['emax_constraint'] == 'fixed':
+            return self.cleaned_data['emax_fixed_value']
+
+        return self.cleaned_data['emax_lower_bound']
+
+    def clean_emax_upper_bound(self):
+        if self.cleaned_data['emax_constraint'] == 'none':
+            return None
+
+        if self.cleaned_data['emax_constraint'] == 'bounded':
+            if self.cleaned_data['emax_lower_bound'] is None and \
+                    self.cleaned_data['emax_upper_bound'] is None:
+                raise forms.ValidationError(
+                    'Enter lower and/or upper bound, or switch to unconstrained'
+                )
+
+            if self.cleaned_data['emax_upper_bound'] < \
+                    self.cleaned_data['emax_lower_bound']:
+                raise forms.ValidationError(
+                    'Upper bound must be >= lower bound'
+                )
+
+        if self.cleaned_data['emax_constraint'] == 'fixed':
+            return self.cleaned_data['emax_fixed_value']
+
+        return self.cleaned_data['emax_upper_bound']
 
 
 class CentredAuthForm(allauth_forms.LoginForm):
