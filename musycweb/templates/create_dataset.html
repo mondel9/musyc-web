@@ -45,7 +45,7 @@ $modal.on('shown.bs.modal', function() {
             if (!(data['success'])) {
                 $dsetForm.replaceWith(data['form_html']);
                 formInit();
-                $('input[name=emax_constraint]').change(setEmaxFieldInputs);
+                $('input[name=effect_constraint]').change(setEmaxFieldInputs);
                 $modal.modal('hide');
             }
             else {
@@ -70,22 +70,21 @@ $dsetForm.submit(function(e) {
 });
 
 var setEmaxFieldInputs = function() {
-    var $fixed = $('#div_id_emax_fixed_value'),
-        $lower = $('#div_id_emax_lower_bound'),
-        $upper = $('#div_id_emax_upper_bound'),
-        constraint = $('input[name=emax_constraint]:checked').val();
+    var $fixed = $('#div_id_e0_fixed_value,#div_id_emax_fixed_value'),
+        $bounds = $('#div_id_e0_lower_bound,#div_id_emax_lower_bound,#div_id_e0_upper_bound,#div_id_emax_upper_bound'),
+        constraint = $('input[name=effect_constraint]:checked').val();
   if(constraint === 'none') {
-      $fixed.add($lower).add($upper).hide();
+      $fixed.add($bounds).hide();
   } else if (constraint === 'fixed') {
       $fixed.show();
-      $lower.add($upper).hide();
+      $bounds.hide();
   } else {
       $fixed.hide();
-      $lower.add($upper).show();
+      $bounds.show();
   }
 };
 
-$('input[name=emax_constraint]').change(setEmaxFieldInputs);
+$('input[name=effect_constraint]').change(setEmaxFieldInputs);
 
 var formInit = function() { setEmaxFieldInputs(); };
 $(window).on('pageshow', function() { formInit(); });

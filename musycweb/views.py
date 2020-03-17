@@ -41,6 +41,8 @@ def create_dataset(request):
                 file=form.cleaned_data['file'],
                 orientation=form.cleaned_data['orientation'],
                 metric_name=form.cleaned_data['metric_name'],
+                e0_lower=form.cleaned_data['e0_lower_bound'],
+                e0_upper=form.cleaned_data['e0_upper_bound'],
                 emax_lower=form.cleaned_data['emax_lower_bound'],
                 emax_upper=form.cleaned_data['emax_upper_bound']
             )

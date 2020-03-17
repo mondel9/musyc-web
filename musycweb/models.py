@@ -7,8 +7,8 @@ import io
 
 class Dataset(models.Model):
     ORIENTATION_CHOICES = (
-        (0, 'Emax<E0'),
-        (1, 'Emax>E0')
+        (0, 'Emax>E0'),
+        (1, 'Emax<E0')
     )
     owner = models.ForeignKey(settings.AUTH_USER_MODEL,
                               on_delete=models.CASCADE)
@@ -23,6 +23,8 @@ class Dataset(models.Model):
     metric_name = models.TextField(default='Percent effect', editable=False)
     emax_lower = models.FloatField(default=None, null=True, editable=False)
     emax_upper = models.FloatField(default=None, null=True, editable=False)
+    e0_lower = models.FloatField(default=None, null=True, editable=False)
+    e0_upper = models.FloatField(default=None, null=True, editable=False)
 
     def __str__(self):
         return f'[{self.id}] {self.name} <{self.owner.email}>'

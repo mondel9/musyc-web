@@ -29,14 +29,17 @@ class CreateDatasetForm(forms.Form):
     metric_name = forms.CharField(
         max_length=32,
         initial=Dataset._meta.get_field('metric_name').default)
-    emax_constraint = forms.ChoiceField(
+    effect_constraint = forms.ChoiceField(
         choices=(('none', 'Unconstrained'),
                  ('fixed', 'Fixed value'),
                  ('bounded', 'Upper/lower bounds')),
         widget=forms.RadioSelect,
         initial='none'
     )
+    e0_fixed_value = forms.FloatField(required=False)
     emax_fixed_value = forms.FloatField(required=False)
+    e0_lower_bound = forms.FloatField(required=False)
+    e0_upper_bound = forms.FloatField(required=False)
     emax_lower_bound = forms.FloatField(required=False)
     emax_upper_bound = forms.FloatField(required=False)
 
@@ -76,45 +79,79 @@ class CreateDatasetForm(forms.Form):
 
         return f
 
-    def clean_emax_fixed_value(self):
-        if self.cleaned_data['emax_constraint'] in ('none', 'bounded'):
+    def clean_e0_fixed_value(self):
+        if self.cleaned_data['effect_constraint'] in ('none', 'bounded'):
             return None
 
-        if self.cleaned_data['emax_constraint'] == 'fixed':
-            if self.cleaned_data['emax_fixed_value'] is None:
+        return self.cleaned_data['e0_fixed_value']
+
+    def clean_emax_fixed_value(self):
+        if self.cleaned_data['effect_constraint'] in ('none', 'bounded'):
+            return None
+
+        if self.cleaned_data['e0_fixed_value'] and \
+                self.cleaned_data['emax_fixed_value']:
+            if self.cleaned_data['orientation'] == 0 and \
+                    self.cleaned_data['emax_fixed_value'] <= \
+                    self.cleaned_data['e0_fixed_value']:
                 raise forms.ValidationError(
-                    'Value required, or switch to unconstrained'
+                    'Emax must be > E0, or change orientation'
+                )
+            if self.cleaned_data['orientation'] == 1 and \
+                    self.cleaned_data['emax_fixed_value'] >= \
+                    self.cleaned_data['e0_fixed_value']:
+                raise forms.ValidationError(
+                    'Emax must be < E0, or change orientation'
                 )
 
         return self.cleaned_data['emax_fixed_value']
 
-    def clean_emax_lower_bound(self):
-        if self.cleaned_data['emax_constraint'] == 'none':
+    def clean_e0_lower_bound(self):
+        if self.cleaned_data['effect_constraint'] == 'none':
             return None
 
-        if self.cleaned_data['emax_constraint'] == 'fixed':
+        if self.cleaned_data['effect_constraint'] == 'fixed':
+            return self.cleaned_data['e0_fixed_value']
+
+        return self.cleaned_data['e0_lower_bound']
+
+    def clean_emax_lower_bound(self):
+        if self.cleaned_data['effect_constraint'] == 'none':
+            return None
+
+        if self.cleaned_data['effect_constraint'] == 'fixed':
             return self.cleaned_data['emax_fixed_value']
 
         return self.cleaned_data['emax_lower_bound']
 
-    def clean_emax_upper_bound(self):
-        if self.cleaned_data['emax_constraint'] == 'none':
+    def clean_e0_upper_bound(self):
+        if self.cleaned_data['effect_constraint'] == 'none':
             return None
 
-        if self.cleaned_data['emax_constraint'] == 'bounded':
-            if self.cleaned_data['emax_lower_bound'] is None and \
-                    self.cleaned_data['emax_upper_bound'] is None:
+        if self.cleaned_data['effect_constraint'] == 'bounded':
+            if self.cleaned_data['e0_upper_bound'] < \
+                    self.cleaned_data['e0_lower_bound']:
                 raise forms.ValidationError(
-                    'Enter lower and/or upper bound, or switch to unconstrained'
+                    'Upper bound must be >= lower bound'
                 )
 
+        if self.cleaned_data['effect_constraint'] == 'fixed':
+            return self.cleaned_data['e0_fixed_value']
+
+        return self.cleaned_data['e0_upper_bound']
+
+    def clean_emax_upper_bound(self):
+        if self.cleaned_data['effect_constraint'] == 'none':
+            return None
+
+        if self.cleaned_data['effect_constraint'] == 'bounded':
             if self.cleaned_data['emax_upper_bound'] < \
                     self.cleaned_data['emax_lower_bound']:
                 raise forms.ValidationError(
                     'Upper bound must be >= lower bound'
                 )
 
-        if self.cleaned_data['emax_constraint'] == 'fixed':
+        if self.cleaned_data['effect_constraint'] == 'fixed':
             return self.cleaned_data['emax_fixed_value']
 
         return self.cleaned_data['emax_upper_bound']
