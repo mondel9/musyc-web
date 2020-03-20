@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Dataset: {{ d.name }}{% endblock %}
+{% block title %}Dataset: <span id="dataset-name">{{ d.name }}</span>{% endblock %}
 {% block content %}
     <div class="progress">
         <div id="progress-inprogress" class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
@@ -36,6 +36,8 @@
 
     <br>
 
+    <a class="btn btn-secondary btn-block" href="#" id="btn-rename-dataset">Rename dataset</a>
+
     <a class="btn btn-danger btn-block" href="#" id="btn-delete-dataset">Delete dataset</a>
 
     <a class="btn btn-primary btn-block" href="{% url 'ajax_dataset_csv' d.id %}">Download parameters (CSV)</a>
@@ -60,6 +62,30 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-danger" id="btn-confirm-delete">Delete dataset</button>
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="rename-modal" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Rename dataset</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+          <form name="frm-rename-dataset">
+              <input type="hidden" name="dataset-id" value="{{ d.id }}">
+              <label for="dataset-name">New name:
+              <input type="text" name="dataset-name" class="form-control"></label>
+          </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" id="btn-confirm-rename">Rename</button>
         <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
       </div>
     </div>
@@ -202,18 +228,43 @@ $('#btn-delete-dataset').click(function(e) {
 $('#btn-confirm-delete').click(function(e) {
     $('#delete-modal').modal('hide');
     $('#loading-modal').modal();
-        $.ajax({type: 'DELETE',
-            url: '{% url 'ajax_delete_dataset' d.id %}',
-            headers: { 'X-CSRFToken': getCookie('csrftoken') },
-            success: function() {
-                window.location = '{% url 'index' %}';
-            },
-            error: function(a1, a2, a3) {
-                console.log(a1,a2,a3);
-                $('#loading-modal').modal('hide');
-                alert('An error occurred. This dataset may not exist or you may not have permission to delete it.');
-            },
-            dataType: 'json'});
+    $.ajax({type: 'DELETE',
+        url: '{% url 'ajax_delete_dataset' d.id %}',
+        headers: { 'X-CSRFToken': getCookie('csrftoken') },
+        success: function() {
+            window.location = '{% url 'index' %}';
+        },
+        error: function() {
+            $('#loading-modal').modal('hide');
+            alert('An error occurred. This dataset may not exist or you may not have permission to delete it.');
+        },
+        dataType: 'json'});
 });
+$('#rename-modal').on('shown.bs.modal', function() {
+   $('input[name=dataset-name]').focus();
+});
+$('#btn-rename-dataset').click(function(e) {
+    e.preventDefault();
+    $('#rename-modal').find('input[name=dataset-name]').val($('#dataset-name').text());
+    $('#rename-modal').modal();
+});
+$('#btn-confirm-rename').click(function(e) {
+    $('#rename-modal').modal('hide');
+    $('#loading-modal').modal();
+    $.ajax({type: 'POST',
+        url: '{% url 'ajax_rename_dataset' d.id %}',
+        headers: { 'X-CSRFToken': getCookie('csrftoken') },
+        data: $('form[name=frm-rename-dataset]').serialize(),
+        success: function(data) {
+            $('#dataset-name').text(data.dataset_name);
+            $('#loading-modal').modal('hide');
+        },
+        error: function() {
+            $('#loading-modal').modal('hide');
+            alert('An error occurred. This dataset may not exist or you may not have permission to rename it.');
+        },
+        dataType: 'json'}
+    );
+})
 </script>
 {% endblock %}

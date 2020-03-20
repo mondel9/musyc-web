@@ -108,6 +108,28 @@ def delete_dataset(request, dataset_id):
 
 
 @login_required
+def rename_dataset(request, dataset_id):
+    if request.method != 'POST':
+        return HttpResponseBadRequest()
+    d = Dataset.objects.filter(id=dataset_id, deleted_date=None)
+    if not request.user.is_staff:
+        d = d.filter(owner_id=request.user.id)
+    try:
+        d = d.get()
+    except Dataset.DoesNotExist:
+        raise Http404()
+
+    if 'dataset-name' not in request.POST:
+        return HttpResponseBadRequest('Missing dataset-name field')
+
+    d.name = request.POST['dataset-name']
+    d.save()
+
+    return JsonResponse({'status': 'success', 'dataset_id': dataset_id,
+                         'dataset_name': d.name})
+
+
+@login_required
 def ajax_tasks(request, dataset_id):
     try:
         d = Dataset.objects.get(id=dataset_id, deleted_date=None)

@@ -9,6 +9,7 @@ urlpatterns = [
     path('upload', views.create_dataset, name='create_dataset'),
     path('dataset/<int:dataset_id>', views.view_dataset, name='view_dataset'),
     path('dataset/<int:dataset_id>/delete', views.delete_dataset, name='ajax_delete_dataset'),
+    path('dataset/<int:dataset_id>/rename', views.rename_dataset, name='ajax_rename_dataset'),
     path('dataset/<int:dataset_id>/csv', views.ajax_dataset_csv, name='ajax_dataset_csv'),
     path('task/<uuid:task_id>', views.view_task, name='view_task'),
     path('task/<uuid:task_id>/csv', views.ajax_task_csv, name='ajax_task_csv'),
