@@ -69,10 +69,16 @@ def fit_drug_combination(
     dip_sd = np.array(dip_sd)
     expt_date = np.array(expt_date)
 
+    # Check for -ve drug concentrations
+    if (d1 < 0).any():
+        raise DataError('Negative concentrations for drug1 - not supported')
+    if (d2 < 0).any():
+        raise DataError('Negative concentrations for drug2 - not supported')
+
+    # Check both drugs have some +ve concentrations
     if not (d1 > 0).any():
         raise DataError('No non-zero concentrations for drug1; single drug '
                         'expts not yet supported')
-
     if not (d2 > 0).any():
         raise DataError('No non-zero concentrations for drug2; single drug '
                         'expts not yet supported')
