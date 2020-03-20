@@ -69,6 +69,12 @@ class DatasetTask(models.Model):
         'boundary_sampling', 'max_conc_d1', 'max_conc_d2', 'min_conc_d1',
         'min_conc_d2', 'fit_method', 'dataset_name'
     )
+    FIELD_RENAMES = {
+        'log_alpha1': 'log_alpha12',
+        'log_alpha2': 'log_alpha21',
+        'log_alpha1_ci': 'log_alpha12_ci',
+        'log_alpha2_ci': 'log_alpha21_ci'
+    }
 
     def __str__(self):
         return f'{self.task_uuid} [DS:{self.dataset_id}] ' \
@@ -109,7 +115,8 @@ class DatasetTask(models.Model):
 
     @property
     def result_csv_header(self):
-        return ','.join(f'"{f}"' for f in self.FIELDS_CSV)
+        return ','.join(f'"{self.FIELD_RENAMES.get(f, f)}"'
+                        for f in self.FIELDS_CSV)
 
     @property
     def result_csv_line(self):
