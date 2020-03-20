@@ -10,6 +10,9 @@
         {% if task.task %}
             {% if task.result_dict.E_fix %}<li>Fixed Effect: {{ task.result_dict.E_fix }}</li>{% endif %}
             {% if task.result_dict.E_bnd %}<li>Effect bounds: {{ task.result_dict.E_bnd }}</li>{% endif %}
+            <li>Beta: {{ task.result_dict.beta }} (Confidence interval: {{ task.result_dict.beta_ci }})</li>
+            <li>Log alpha1: {{ task.result_dict.log_alpha1 }} (Confidence interval: {{ task.result_dict.log_alpha1_ci }})</li>
+            <li>Log alpha2: {{ task.result_dict.log_alpha2 }} (Confidence interval: {{ task.result_dict.log_alpha2_ci }})</li>
             <li>Task Start Date: {{ task.task.date_created }}</li>
             <li>Task End Date: {{ task.task.date_done }}</li>
         {% endif %}

@@ -31,7 +31,7 @@ class CreateDatasetForm(forms.Form):
         initial=Dataset._meta.get_field('metric_name').default)
     effect_constraint = forms.ChoiceField(
         choices=(('none', 'Unconstrained'),
-                 ('fixed', 'Fixed value'),
+                 ('fixed', 'Fixed (No synergistic efficacy, beta=0)'),
                  ('bounded', 'Upper/lower bounds')),
         widget=forms.RadioSelect,
         initial='none'
