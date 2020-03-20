@@ -89,8 +89,8 @@ class CreateDatasetForm(forms.Form):
         if self.cleaned_data['effect_constraint'] in ('none', 'bounded'):
             return None
 
-        if self.cleaned_data['e0_fixed_value'] and \
-                self.cleaned_data['emax_fixed_value']:
+        if self.cleaned_data['e0_fixed_value'] is not None and \
+                self.cleaned_data['emax_fixed_value'] is not None:
             if self.cleaned_data['orientation'] == 0 and \
                     self.cleaned_data['emax_fixed_value'] <= \
                     self.cleaned_data['e0_fixed_value']:

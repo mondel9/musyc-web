@@ -163,8 +163,10 @@ def process_dataset(dataset_or_id):
     # Global fitting bounds
     e_fix = None
     e_bnd = None
-    if dataset.emax_lower or dataset.emax_upper or \
-            dataset.e0_lower or dataset.e0_upper:
+    if dataset.emax_lower is not None or \
+            dataset.emax_upper is not None or \
+            dataset.e0_lower is not None or \
+            dataset.e0_upper is not None:
         if dataset.emax_lower == dataset.emax_upper and \
                 dataset.emax_lower is not None and \
                 dataset.e0_lower == dataset.e0_upper and \
@@ -173,10 +175,10 @@ def process_dataset(dataset_or_id):
             e_fix = [dataset.e0_lower] + [dataset.emax_lower] * 3
         else:
             # Constraint
-            e0_lwr = dataset.e0_lower if dataset.e0_lower else -np.Inf
-            e0_upr = dataset.e0_upper if dataset.e0_upper else np.Inf
-            emax_lwr = dataset.emax_lower if dataset.emax_lower else -np.Inf
-            emax_upr = dataset.emax_upper if dataset.emax_upper else np.Inf
+            e0_lwr = dataset.e0_lower if dataset.e0_lower is not None else -np.Inf
+            e0_upr = dataset.e0_upper if dataset.e0_upper is not None else np.Inf
+            emax_lwr = dataset.emax_lower if dataset.emax_lower is not None else -np.Inf
+            emax_upr = dataset.emax_upper if dataset.emax_upper is not None else np.Inf
             e_bnd = [[e0_lwr] + [emax_lwr] * 3, [e0_upr] + [emax_upr] * 3]
 
     # Canonicalise drug order, alphabetically
