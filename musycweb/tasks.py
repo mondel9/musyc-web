@@ -145,7 +145,7 @@ def _swap_drug1_drug2(data):
 def process_dataset(dataset_or_id):
     """ Split a dataset into drug combinations and submit as tasks """
     if isinstance(dataset_or_id, int):
-        dataset = Dataset.objects.get(pk=dataset_or_id)
+        dataset = Dataset.objects.get(pk=dataset_or_id, deleted_date=None)
     else:
         dataset = dataset_or_id
 

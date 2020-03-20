@@ -1,10 +1,12 @@
 from django.shortcuts import render, reverse
 from django.http import HttpResponse, HttpResponseRedirect, Http404,\
-    JsonResponse
+    JsonResponse, HttpResponseBadRequest
 from django.contrib.auth.decorators import login_required
+from django.utils import timezone
 from .forms import CreateDatasetForm
 from .models import Dataset, DatasetTask
 from .tasks import process_dataset
+from django.contrib import messages
 from django_celery_results.models import TaskResult
 from django.template.context_processors import csrf
 from musyc_code.SynergyCalculator.doseResponseSurfPlot import \
@@ -20,7 +22,10 @@ def about(request):
 
 @login_required
 def index(request):
-    datasets = Dataset.objects.filter(owner=request.user).order_by('-creation_date')
+    datasets = Dataset.objects.filter(
+        owner=request.user,
+        deleted_date=None
+    ).order_by('-creation_date')
 
     return render(request, 'index.html', {'datasets': datasets})
 
@@ -73,7 +78,7 @@ def create_dataset(request):
 @login_required
 def view_dataset(request, dataset_id):
     try:
-        d = Dataset.objects.get(id=dataset_id)
+        d = Dataset.objects.get(id=dataset_id, deleted_date=None)
     except Dataset.DoesNotExist:
         raise Http404()
 
@@ -84,9 +89,28 @@ def view_dataset(request, dataset_id):
 
 
 @login_required
+def delete_dataset(request, dataset_id):
+    if request.method != 'DELETE':
+        return HttpResponseBadRequest()
+    d = Dataset.objects.filter(id=dataset_id, deleted_date=None)
+    if not request.user.is_staff:
+        d = d.filter(owner_id=request.user.id)
+    try:
+        d = d.get()
+    except Dataset.DoesNotExist:
+        raise Http404()
+
+    d.deleted_date = timezone.now()
+    d.save()
+
+    messages.success(request, f'Dataset "{d.name}" was deleted')
+    return JsonResponse({'status': 'success', 'dataset_id': dataset_id})
+
+
+@login_required
 def ajax_tasks(request, dataset_id):
     try:
-        d = Dataset.objects.get(id=dataset_id)
+        d = Dataset.objects.get(id=dataset_id, deleted_date=None)
     except Dataset.DoesNotExist:
         raise Http404()
 
@@ -102,7 +126,10 @@ def ajax_tasks(request, dataset_id):
 
 @login_required
 def ajax_dataset_csv(request, dataset_id):
-    tasks = DatasetTask.objects.filter(dataset_id=dataset_id).select_related(
+    tasks = DatasetTask.objects.filter(
+        dataset_id=dataset_id,
+        dataset__deleted_date=None
+    ).select_related(
         'task').select_related('dataset')
 
     if not tasks:
@@ -127,7 +154,10 @@ def ajax_dataset_csv(request, dataset_id):
 @login_required
 def view_task(request, task_id):
     try:
-        task = DatasetTask.objects.filter(task_uuid=task_id).select_related(
+        task = DatasetTask.objects.filter(
+            task_uuid=task_id,
+            dataset__deleted_date=None
+        ).select_related(
             'task').select_related('dataset').get()
     except DatasetTask.DoesNotExist:
         raise Http404()
@@ -141,7 +171,10 @@ def view_task(request, task_id):
 @login_required
 def ajax_task_csv(request, task_id):
     try:
-        task = DatasetTask.objects.filter(task_uuid=task_id).select_related(
+        task = DatasetTask.objects.filter(
+            task_uuid=task_id,
+            dataset__deleted_date=None
+        ).select_related(
             'task').select_related('dataset').get()
     except DatasetTask.DoesNotExist:
         return HttpResponse(f'Task {task_id} not found', status=404)
@@ -168,7 +201,10 @@ def ajax_task_csv(request, task_id):
 @login_required
 def ajax_surface_plot(request, task_id):
     try:
-        task = DatasetTask.objects.filter(task_uuid=task_id).select_related(
+        task = DatasetTask.objects.filter(
+            task_uuid=task_id,
+            dataset__deleted_date=None
+        ).select_related(
             'task').select_related('dataset').get()
     except DatasetTask.DoesNotExist:
         raise Http404()
@@ -202,6 +238,7 @@ def ajax_surface_plot(request, task_id):
 def ajax_task_status(request, dataset_id):
     tasks = DatasetTask.objects.filter(
         dataset_id=dataset_id,
+        dataset__deleted_date=None
     ).select_related('task')
     if not request.user.is_staff:
         tasks = tasks.filter(dataset__owner_id=request.user.id)

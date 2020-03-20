@@ -14,6 +14,7 @@ class Dataset(models.Model):
                               on_delete=models.CASCADE)
     name = models.TextField()
     creation_date = models.DateTimeField(auto_now_add=True)
+    deleted_date = models.DateTimeField(null=True, default=None, editable=False)
     file = models.FileField(upload_to='_state/datasets', editable=False)
     orientation = models.PositiveSmallIntegerField(
         choices=ORIENTATION_CHOICES,
