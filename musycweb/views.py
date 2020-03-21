@@ -20,6 +20,10 @@ def about(request):
     return render(request, 'about.html', {})
 
 
+def help(request):
+    return render(request, 'help.html', {})
+
+
 @login_required
 def index(request):
     datasets = Dataset.objects.filter(

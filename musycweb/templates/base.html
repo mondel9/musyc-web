@@ -28,6 +28,9 @@
           <li class="nav-item{% url 'about' as curpage %}{% if request.path == curpage %} active{% endif %}">
             <a class="nav-link" href="{% url 'about' %}">About</a>
           </li>
+          <li class="nav-item{% url 'help' as curpage %}{% if request.path == curpage %} active{% endif %}">
+            <a class="nav-link" href="{% url 'help' %}">Help</a>
+          </li>
         </ul>
       {% if request.user.is_authenticated %}
         <ul class="navbar-nav">

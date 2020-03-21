@@ -206,7 +206,7 @@ SITE_ID = 1
 STATIC_URL = '/static/'
 if 'DJANGO_STATIC_ROOT' in os.environ:
     STATIC_ROOT = os.environ['DJANGO_STATIC_ROOT']
-
+STATICFILES_DIRS = [os.path.join(BASE_DIR, "static")]
 
 # Celery
 CELERY_RESULT_BACKEND = 'django-db'

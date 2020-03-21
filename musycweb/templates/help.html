@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Help{% endblock %}
+{% block content %}
+<p class="lead">This page covers usage of this web application. For general information about MuSyC
+and frequently asked questions, see the <a href="{% url 'about' %}">About page</a>.</p>
+
+<h2>Input data format</h2>
+<p>Users' data is uploaded in comma-separated value (CSV) format, using the Unicode UTF-8 encoding (the default
+    across most software). The required columns and their contents are shown in the table below. Combinations are
+    grouped based on drug1, drug2, and sample columns. Thus, multiple combinations can be uploaded in the same file
+    and will be processed separately. The drug1.units and drug2.units are arbitrary but must be consistent within
+    each combination.</p>
+
+<table class="table">
+<thead>
+    <tr>
+        <th>Column Name</th>
+        <th>Data Type</th>
+        <th>Description</th>
+    </tr>
+</thead>
+<tbody>
+<tr>
+    <td>expt.date</td>
+    <td>yyyy-mm-dd</td>
+    <td>Experiment date</td>
+</tr>
+<tr>
+    <td>drug1.conc</td>
+    <td>Float</td>
+    <td>Drug 1 concentration</td>
+</tr>
+<tr>
+    <td>drug2.conc</td>
+    <td>Float</td>
+    <td>Drug 2 concentration</td>
+</tr>
+<tr>
+    <td>effect</td>
+    <td>Float</td>
+    <td>Effect value (e.g., % viability, DIP rate)</td>
+</tr>
+<tr>
+    <td>sample</td>
+    <td>String</td>
+    <td>Sample name (e.g., name of cell line)</td>
+</tr>
+<tr>
+    <td>drug1</td>
+    <td>String</td>
+    <td>Drug 1 name</td>
+</tr>
+<tr>
+    <td>drug2</td>
+    <td>String</td>
+    <td>Drug 2 name</td>
+</tr>
+<tr>
+    <td>drug1.units</td>
+    <td>String</td>
+    <td>Drug 1 units (e.g., nM)</td>
+</tr>
+<tr>
+    <td>drug2.units</td>
+    <td>String</td>
+    <td>Drug 2 units (e.g., nM)</td>
+</tr>
+<tr>
+    <td>effect.95ci</td>
+    <td>Float (optional)</td>
+    <td>95% confidence interval for effect value</td>
+</tr>
+</tbody>
+</table>
+
+<h2>Create an account</h2>
+
+Go to {% if request.user.is_authenticated %}Create an account (note: you are already signed in){% else %}<a href="{% url 'account_signup' %}">Create an account</a>{% endif %}.
+Please enter your email address and a
+choice of password. Your email address will be verified by sending an email with a clickable link. Click on this
+link, and you will then be able to log in to the site with your credentials.
+
+<h2>Create a dataset</h2>
+
+{% if request.user.is_authenticated %}Go to <a href="{% url 'create_dataset' %}">Create dataset</a>.
+{% else %}After <a href="{% url 'account_login' %}">logging in</a>, click the Create dataset button.{% endif %}
+
+Fill out the form with each of the required fields:
+<br><br>
+
+<ul>
+    <li><strong>Name</strong>: A name to refer to the dataset</li>
+    <li><strong>File</strong>: Select a CSV file from your computer, formatted as described above</li>
+    <li><strong>Orientation</strong>: Whether Emax &gt; E0, or Emax &lt; E0:<br><br>
+        <img src="{% static 'Emax_gt_E0.png' %}" class="img-fluid" alt="Dose-response curve illustrating Emax greater than E0">
+        <img src="{% static 'Emax_lt_E0.png' %}" class="img-fluid" alt="Dose-response curve illustrating Emax less than E0"><br><br>
+        <em>Above: Dose-response curves showing Emax &gt; E0 (left) and Emax &lt; E0 (right)</em><br>
+    </li>
+    <li><strong>Metric name</strong>: The name of the drug effect (e.g., "Percent effect" or "DIP rate")</li>
+    <li><strong>Effect constraint</strong>: Whether to fix or apply bounds to the E0 and Emax values.
+        <ul>
+            <li><strong>Unconstrained</strong>: Emax and E0 are determined empirically</li>
+            <li><strong>Fixed</strong>: Emax and E0 are specified manually. This implies no synergistic efficacy, i.e. beta=0. You can specify one fixed value and leave the other one unconstrained (blank) if desired.</li>
+            <li><strong>Upper/lower bounds</strong>: Specify range bounds for Emax and E0. You can provide lower, upper, or both bounds, for either or both of Emax or E0. Leave blank for unconstrained.</li>
+        </ul>
+    </li>
+</ul>
+
+<p>After completing the form, click the "Create dataset" button on this page. The file will be uploaded
+and fitting tasks created for each drug combination. Depending on the dataset size and demand,
+this process make take a few seconds to several minutes. Do not navigate away from the page while the
+upload is in progress.</p>
+
+<h2>The Dataset Page</h2>
+
+<p>After a dataset upload is complete, you will see the dataset page. You can also return to the dataset page
+at any time by logging in and by clicking the dataset's name on the home page.</p>
+
+<p>Each combination experiment is sent to a queue for
+processing. The processing step runs the MuSyC algorithm to fit the dose-response surface, and returns the relevant
+fitting parameters. For small datasets, this process typically only takes a few minutes, but this will vary
+depending on dataset size and server demand.</p>
+
+<p>When the upload is complete, the web browser will redirect to a page showing the dataset name and a list of the
+combination experiments in a table. A progress bar indicates whether there are still fitting tasks queued, in
+progress, or completed. At the bottom of the page, there is a link to download the dataset's fitting parameters as a
+CSV file.</p>
+
+<p>Each drug combination in the table shows the fitting algorithm's status (e.g., queued, started, success, failed).
+For successful tasks, clicking on the word "SUCCESS" will show the parameters for that combination, along with an
+interactive dose-response surface plot, which can be zoomed, panned, rotated etc. in the web browser. For tasks
+marked as "FAILED", clicking on that word will show more details about the error (e.g., if there was a data
+validation issue that the user should correct). There is also a link at the bottom of the task result page to
+download that single combination's parameters as a CSV file.</p>
+
+
+<h2>Parameter CSV file</h2>
+
+The following table gives a description of each of the fields in the parameter CSV files.
+
+<table class="table">
+<thead>
+<tr><th>Parameter</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td>sample</td><td>Sample name</td></tr>
+<tr><td>drug1_name</td><td>Name of compound 1 (d1)</td></tr>
+<tr><td>drug2_name</td><td>Name of compound 2 (d2)</td></tr>
+<tr><td>expt</td><td>Name of experiment</td></tr>
+<tr><td>batch</td><td>Name of the batch (if applicable)</td></tr>
+<tr><td>task_status</td><td>Did the task succeed?</td></tr>
+<tr><td>converge_mc_nlls</td><td>Did the Monte Carlo sampling converge? (1=True)</td></tr>
+<tr><td>beta</td><td>The % increase of in the effect of the combination over the most efficacious single agent (based on fitted Emax).  Beta = (min(E1,E2)-E3)/(E0-min(E1,E2))</td></tr>
+<tr><td>beta_ci</td><td>The 95% confidence interval for beta based on Monte Carlo sampling</td></tr>
+<tr><td>beta_obs</td><td>The observed % increase of in the effect of the combination over the most efficacious single agent (based value of fit at max tested conc.).  Beta_obs = (min(E1_obs,E2_obs)-E3_obs)/(E0-min(E1_obs,E2_obs))</td></tr>
+<tr><td>beta_obs_ci</td><td>The 95% confidence interval for beta_obs based on Monte Carlo sampling</td></tr>
+<tr><td>log_alpha12</td><td>Log of synergistic potency (drug1’s affect on potency of drug2). Values < 0 are antagonistically potent.  Values >0 are synergistically potent.  Alpha1 is quantifies the shift in the EC50 of drug 2 at saturating conc of d1.</td></tr>
+<tr><td>log_alpha12_ci</td><td>Uncertainty in log_alpha1</td></tr>
+<tr><td>log_alpha21</td><td>Log of synergistic potency (drug2’s affect on potency of drug1). Values < 0 are antagonistically potent.  Values >0 are synergistically potent.  Alpha2 is quantifies the shift in the EC50 of drug 1 at saturating conc of d2.</td></tr>
+<tr><td>log_alpha21_ci</td><td>Uncertainty in log_alpha2</td></tr>
+<tr><td>R2</td><td>R-squared of fit</td></tr>
+<tr><td>log_like_mc_nlls</td><td>Log likelihood of the parameter set</td></tr>
+<tr><td>E0</td><td>Fitted basal effect when [d1]=[d2]=0</td></tr>
+<tr><td>E0_ci</td><td>The 95% confidence interval for E0</td></tr>
+<tr><td>E1</td><td>Fitted effect for [d1]->inf and [d2]=0</td></tr>
+<tr><td>E1_ci</td><td>The 95% confidence interval E1</td></tr>
+<tr><td>E2</td><td>Value of fit at max tested conc. d1 and [d2]=0</td></tr>
+<tr><td>E2_ci</td><td>The 95% confidence interval E1_obs</td></tr>
+<tr><td>E3</td><td>Fitted effect for [d2]->inf and [d1]=0</td></tr>
+<tr><td>E3_ci</td><td>The 95% confidence interval E2</td></tr>
+<tr><td>E1_obs</td><td>Value of fit at max tested conc. d2 and [d1]=0</td></tr>
+<tr><td>E1_obs_ci</td><td>The 95% confidence interval E2_obs</td></tr>
+<tr><td>E2_obs</td><td>Fitted effect for [d1]->inf and [d1]->inf</td></tr>
+<tr><td>E2_obs_ci</td><td>The 95% confidence interval E3</td></tr>
+<tr><td>E3_obs</td><td>Value of fit at max tested conc. d1 and d2</td></tr>
+<tr><td>E3_obs_ci</td><td>The 95% confidence interval E3_obs</td></tr>
+<tr><td>log_C1</td><td>Log of the EC50 for drug 1</td></tr>
+<tr><td>log_C1_ci</td><td>Uncertainty in log_C1</td></tr>
+<tr><td>log_C2</td><td>Log of the EC50 for drug 2</td></tr>
+<tr><td>log_C2_ci</td><td>Uncertainty in log_C2</td></tr>
+<tr><td>log_h1</td><td>Log of the hill slope d1</td></tr>
+<tr><td>log_h1_ci</td><td>95% confidence interval of log_h1</td></tr>
+<tr><td>log_h2</td><td>log of hill slope d2</td></tr>
+<tr><td>log_h2_ci</td><td>95% confidence interval of log_h2</td></tr>
+<tr><td>h1</td><td>Hill slope d1</td></tr>
+<tr><td>h2</td><td>Hill slope d2</td></tr>
+<tr><td>C1</td><td>EC50 drug1</td></tr>
+<tr><td>C2</td><td>EC50 drug2</td></tr>
+<tr><td>time_total</td><td>Time to fit</td></tr>
+<tr><td>drug1_units</td><td>Drug 1 units</td></tr>
+<tr><td>drug2_units</td><td>Drug 2 units</td></tr>
+<tr><td>metric_name</td><td>name of metric of drug effect</td></tr>
+<tr><td>fit_beta</td><td>Was Emax fixed such that beta=0? 1=Yes; 0=No</td></tr>
+<tr><td>boundary_sampling</td><td>Was boundary sampling fit used</td></tr>
+<tr><td>max_conc_d1</td><td>maximum tested concentration of drug 1</td></tr>
+<tr><td>max_conc_d2</td><td>maximum tested concentration of drug 2</td></tr>
+<tr><td>min_conc_d1</td><td>minimum tested concentration of drug 1</td></tr>
+<tr><td>min_conc_d2</td><td>minimum tested concentration of drug 2</td></tr>
+<tr><td>fit_method</td><td>What method was used to fit the 2D Hill equation</td></tr>
+<tr><td>dataset_name</td><td>Name of dataset in MuSyC portal</td></tr>
+</tbody>
+</table>
+
+<p>Please send questions, issues, and/or licensing requests to: <a href="mailto:musyc@gmail.com">musyc@gmail.com</a>.</p>
+
+{% if not request.user.is_authenticated %}
+    <a href="{{ account_signup }}" class="btn btn-primary btn-block">Create an account</a>
+{% endif %}
+<a href="{% url 'index' %}" role="button" class="btn btn-secondary btn-block">Back to home page</a>
+<br>
+{% endblock %}
