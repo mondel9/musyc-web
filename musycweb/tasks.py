@@ -4,10 +4,6 @@ from .models import Dataset, DatasetTask
 import pandas as pd
 import numpy as np
 from musyc_code.SynergyCalculator.SynergyCalculator import MuSyC_2D
-from django_celery_results.models import TaskResult
-from django.db.models.signals import post_save
-from django.dispatch import receiver
-from django.db import transaction
 
 
 class DataError(Exception):
@@ -145,11 +141,13 @@ def process_dataset(dataset_or_id):
 
     # Read in file
     data = pd.read_table(dataset.file, delimiter=',')
-    if 'effect.95ci' not in data.columns:
-        data['effect.95ci'] = min(data['effect']/100.)
 
     # Remove NaNs
     data = data[data['effect'].notna()]
+
+    # Add in optional columns
+    if 'effect.95ci' not in data.columns:
+        data['effect.95ci'] = min(data['effect']/100.)
 
     # Add SD
     data['effect.sd'] = data['effect.95ci'] / (2 * 1.96)
@@ -194,75 +192,62 @@ def process_dataset(dataset_or_id):
     data_expt = data.loc[(data['drug1.conc'] != 0) & (data['drug2.conc'] != 0)]
 
     # Loop through each (drug1, drug2, sample) combination and launch tasks
-    for group_name, grp_dat in data_expt.groupby(['drug1', 'drug2', 'sample']):
-        drug1_name, drug2_name, sample = group_name
+    dataset_tasks = []
+    import itertools
 
-        cmb_dat = pd.concat([
-            grp_dat,
-            data_ctrl.loc[data_ctrl['sample'] == sample],
-            data_sa_1.loc[(data_sa_1['sample'] == sample) &
-                          (data_sa_1['drug2'] == drug2_name)],
-            data_sa_2.loc[(data_sa_2['sample'] == sample) &
-                          (data_sa_2['drug1'] == drug1_name)],
-            # Need to swap drugs in single agent case where drug is in wrong col
-            _swap_drug1_drug2(data_sa_1.loc[(data_sa_1['sample'] == sample) &
-                              (data_sa_1['drug2'] == drug1_name)]),
-            _swap_drug1_drug2(data_sa_2.loc[(data_sa_2['sample'] == sample) &
-                              (data_sa_2['drug1'] == drug2_name)])
-        ])
+    def lfrom(lists, attr):
+        return list(itertools.chain(*(l[attr].array for l in lists)))
 
-        task = fit_drug_combination.delay(
-            dataset_id=dataset.id,
-            drug1_name=drug1_name,
-            drug2_name=drug2_name,
-            sample=sample,
-            d1=cmb_dat['drug1.conc'].tolist(),
-            d2=cmb_dat['drug2.conc'].tolist(),
-            dip=cmb_dat['effect'].tolist(),
-            dip_sd=cmb_dat['effect.sd'].tolist(),
-            E_fix=e_fix,
-            E_bnd=e_bnd,
-            drug1_units=cmb_dat['drug1.units'].unique().tolist(),
-            drug2_units=cmb_dat['drug2.units'].unique().tolist(),
-            expt_date=cmb_dat['expt.date'].unique().tolist(),
-            output_dir=None,
-            expt=dataset.name,
-            metric_name=dataset.metric_name,
-            hill_orient=dataset.orientation
-        )
+    def sfrom(lists, attr):
+        return list(set(itertools.chain(*(l[attr].array for l in lists))))
 
-        # # Create DB entry for tracking this task
-        dt = DatasetTask.objects.create(
-            dataset=dataset,
-            drug1=drug1_name,
-            drug2=drug2_name,
-            sample=sample,
-            task_id=task.id
-        )
-        dt.save()
+    try:
+        for sample, samp_grp in data_expt.groupby(['sample'], sort=False):
+            data_ctrl_s = data_ctrl.loc[data_ctrl['sample'] == sample]
+            data_sa_1_s = data_sa_1.loc[data_sa_1['sample'] == sample]
+            data_sa_2_s = data_sa_2.loc[data_sa_2['sample'] == sample]
 
+            for group_name, grp_dat in samp_grp.groupby(
+                    ['drug1', 'drug2'], sort=False):
+                drug1_name, drug2_name = group_name
 
-def attach_missing_taskresults(tasklist=None):
-    if tasklist is None:
-        tasks_with_missing = TaskResult.objects.filter(task=None)
-    else:
-        tasks_with_missing = [t.task_id for t in tasklist if t.task is None]
-    if not tasks_with_missing:
-        return tasklist
-    taskresults = {
-        tr.task_id: tr
-        for tr in
-        TaskResult.objects.filter(task_id__in=tasks_with_missing).order_by()
-    }
-    for t in tasklist:
-        if t.task:
-            continue
-        try:
-            tr = taskresults[t.task_id]
-        except KeyError:
-            continue
-        t.update(task=tr)
-        # Update directly to avoid DB refresh
-        t.task = tr
+                df_list = [
+                    grp_dat,
+                    data_ctrl_s,
+                    data_sa_1_s.loc[data_sa_1_s['drug2'] == drug2_name],
+                    data_sa_2_s.loc[data_sa_2_s['drug1'] == drug1_name],
+                    # Need to swap drugs in single agent case where drug is in wrong col
+                    _swap_drug1_drug2(data_sa_1_s.loc[data_sa_1_s['drug2'] == drug1_name]),
+                    _swap_drug1_drug2(data_sa_2_s.loc[data_sa_2['drug1'] == drug2_name])
+                ]
 
-    return tasklist
+                task = fit_drug_combination.delay(
+                    dataset_id=dataset.id,
+                    drug1_name=drug1_name,
+                    drug2_name=drug2_name,
+                    sample=sample,
+                    d1=lfrom(df_list, 'drug1.conc'),
+                    d2=lfrom(df_list, 'drug2.conc'),
+                    dip=lfrom(df_list, 'effect'),
+                    dip_sd=lfrom(df_list, 'effect.sd'),
+                    E_fix=e_fix,
+                    E_bnd=e_bnd,
+                    drug1_units=sfrom(df_list, 'drug1.units'),
+                    drug2_units=sfrom(df_list, 'drug2.units'),
+                    expt_date=sfrom(df_list, 'expt.date'),
+                    output_dir=None,
+                    expt=dataset.name,
+                    metric_name=dataset.metric_name,
+                    hill_orient=dataset.orientation
+                )
+
+                # # Create DB entry for tracking this task
+                dataset_tasks.append(DatasetTask(
+                    dataset=dataset,
+                    drug1=drug1_name,
+                    drug2=drug2_name,
+                    sample=sample,
+                    task_id=task.id
+                ))
+    finally:
+        DatasetTask.objects.bulk_create(dataset_tasks)
