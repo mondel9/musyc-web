@@ -248,7 +248,11 @@ $('#btn-rename-dataset').click(function(e) {
     $('#rename-modal').find('input[name=dataset-name]').val($('#dataset-name').text());
     $('#rename-modal').modal();
 });
-$('#btn-confirm-rename').click(function(e) {
+$('form[name=frm-rename-dataset]').submit(function (e) {
+    e.preventDefault();
+    $('#btn-confirm-rename').click();
+});
+$('#btn-confirm-rename').click(function() {
     $('#rename-modal').modal('hide');
     $('#loading-modal').modal();
     $.ajax({type: 'POST',
