@@ -83,10 +83,10 @@ class DatasetTask(models.Model):
 
     @property
     def status(self):
-        if not self.task:
+        try:
+            return self.task.status
+        except TaskResult.DoesNotExist:
             return 'QUEUED'
-
-        return self.task.status
 
     @property
     def error_message(self):
@@ -101,7 +101,7 @@ class DatasetTask(models.Model):
 
     @property
     def result_dict(self):
-        if not self.task or self.task.status != 'SUCCESS':
+        if self.status != 'SUCCESS':
             d = dict(
                 drug1_name=self.drug1,
                 drug2_name=self.drug2,

@@ -143,7 +143,7 @@ def ajax_tasks(request, dataset_id):
     if d.owner_id != request.user.id and not request.user.is_staff:
         raise Http404()
 
-    tasks = DatasetTask.objects.filter(dataset=d).select_related(
+    tasks = DatasetTask.objects.filter(dataset=d).prefetch_related(
         'task').order_by('drug1', 'drug2', 'sample')
 
     return JsonResponse({'data': [
@@ -155,8 +155,7 @@ def ajax_dataset_csv(request, dataset_id):
     tasks = DatasetTask.objects.filter(
         dataset_id=dataset_id,
         dataset__deleted_date=None
-    ).select_related(
-        'task').select_related('dataset')
+    ).prefetch_related('task').select_related('dataset')
 
     if not tasks:
         return HttpResponse(f'Dataset {dataset_id} has no tasks or not found')
@@ -265,7 +264,7 @@ def ajax_task_status(request, dataset_id):
     tasks = DatasetTask.objects.filter(
         dataset_id=dataset_id,
         dataset__deleted_date=None
-    ).select_related('task')
+    ).prefetch_related('task')
     if not request.user.is_staff:
         tasks = tasks.filter(dataset__owner_id=request.user.id)
     return JsonResponse({task.task_id: task.status for task in tasks})
