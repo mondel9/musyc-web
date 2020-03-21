@@ -124,6 +124,7 @@ var pollStatus = function() {
                     } else {
                         updateStr = data[uuid];
                         if (data[uuid] === 'FAILURE') {
+                            updateStr = '<a href="/task/' + uuid + '">FAILURE</a>';
                             numFailed++;
                         } else if (data[uuid] === 'QUEUED') {
                             numQueued++;

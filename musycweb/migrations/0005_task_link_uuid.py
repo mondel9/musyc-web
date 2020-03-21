@@ -40,12 +40,21 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='datasettask',
             name='task',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE,
+            field=models.ForeignKey(null=True,
+                                    on_delete=django.db.models.deletion.CASCADE,
                                     db_constraint=False,
                                     to='django_celery_results.TaskResult',
                                     to_field='task_id'),
         ),
         migrations.RunPython(forwards_func),
+        migrations.AlterField(
+            model_name='datasettask',
+            name='task',
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE,
+                                    db_constraint=False,
+                                    to='django_celery_results.TaskResult',
+                                    to_field='task_id'),
+        ),
         migrations.RemoveField(
             model_name='datasettask',
             name='task_uuid',
