@@ -25,7 +25,7 @@
           <span class="sr-only">Loading...</span>
         </div>
     </div><br>
-    <a class="btn btn-secondary btn-block" href="{% url 'ajax_task_csv' task.task_uuid %}">Download parameters (CSV)</a>
+    <a class="btn btn-secondary btn-block" href="{% url 'ajax_task_csv' task.task_id %}">Download parameters (CSV)</a>
     {% elif task.status == 'FAILURE' %}
         <div class="text-center alert alert-danger">
             <h3>{{ task.status }}</h3>
@@ -44,7 +44,7 @@
 <script>
     $(function() {
         $.ajax({
-            url: '{% url 'ajax_surface_plot' task.task_uuid %}',
+            url: '{% url 'ajax_surface_plot' task.task_id %}',
             data: null,
             success: function (data) {
                 $('#plotly-outer').html(data);

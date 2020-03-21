@@ -36,8 +36,9 @@ class DatasetTask(models.Model):
     drug1 = models.TextField()
     drug2 = models.TextField()
     sample = models.TextField()
-    task = models.ForeignKey(TaskResult, on_delete=models.CASCADE, null=True)
-    task_uuid = models.TextField()
+    task = models.ForeignKey(TaskResult, on_delete=models.CASCADE,
+                             db_constraint=False,
+                             to_field='task_id')
     # FIELDS_CSV = (
     #     'dataset_name', 'task_uuid', 'task_status',
     #     'sample', 'expt', 'fit_method', 'drug1_name', 'drug2_name',
@@ -77,7 +78,7 @@ class DatasetTask(models.Model):
     }
 
     def __str__(self):
-        return f'{self.task_uuid} [DS:{self.dataset_id}] ' \
+        return f'{self.task_id} [DS:{self.dataset_id}] ' \
                f'<{self.dataset.owner.email}>'
 
     @property
@@ -110,7 +111,6 @@ class DatasetTask(models.Model):
             d = json.loads(self.task.result)
         d['task_status'] = self.status
         d['dataset_name'] = self.dataset.name
-        d['task_uuid'] = self.task_uuid
         return d
 
     @property

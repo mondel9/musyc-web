@@ -22,18 +22,6 @@ def test_add(self, x, y, sleep=0):
     return x + y
 
 
-@receiver(post_save, sender=TaskResult)
-def link_datasetresult(sender, instance=None, created=None, **kwargs):
-    if not instance.task_name.endswith('fit_drug_combination'):
-        return
-    if not created:
-        return
-    transaction.on_commit(
-        lambda: DatasetTask.objects.filter(
-            task_uuid=instance.task_id).update(task=instance)
-    )
-
-
 @shared_task(bind=True)
 def fit_drug_combination(
         self, dataset_id, drug1_name, drug2_name, sample, d1, d2, dip, dip_sd,
@@ -249,7 +237,7 @@ def process_dataset(dataset_or_id):
             drug1=drug1_name,
             drug2=drug2_name,
             sample=sample,
-            task_uuid=task.id
+            task_id=task.id
         )
         dt.save()
 
@@ -258,7 +246,7 @@ def attach_missing_taskresults(tasklist=None):
     if tasklist is None:
         tasks_with_missing = TaskResult.objects.filter(task=None)
     else:
-        tasks_with_missing = [t.task_uuid for t in tasklist if t.task is None]
+        tasks_with_missing = [t.task_id for t in tasklist if t.task is None]
     if not tasks_with_missing:
         return tasklist
     taskresults = {
@@ -270,7 +258,7 @@ def attach_missing_taskresults(tasklist=None):
         if t.task:
             continue
         try:
-            tr = taskresults[t.task_uuid]
+            tr = taskresults[t.task_id]
         except KeyError:
             continue
         t.update(task=tr)

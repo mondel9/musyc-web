@@ -147,7 +147,7 @@ def ajax_tasks(request, dataset_id):
         'task').order_by('drug1', 'drug2', 'sample')
 
     return JsonResponse({'data': [
-        [t.drug1, t.drug2, t.sample, t.status, t.task_uuid] for t in tasks]})
+        [t.drug1, t.drug2, t.sample, t.status, t.task_id] for t in tasks]})
 
 
 @login_required
@@ -181,7 +181,7 @@ def ajax_dataset_csv(request, dataset_id):
 def view_task(request, task_id):
     try:
         task = DatasetTask.objects.filter(
-            task_uuid=task_id,
+            task_id=task_id,
             dataset__deleted_date=None
         ).select_related(
             'task').select_related('dataset').get()
@@ -198,7 +198,7 @@ def view_task(request, task_id):
 def ajax_task_csv(request, task_id):
     try:
         task = DatasetTask.objects.filter(
-            task_uuid=task_id,
+            task_id=task_id,
             dataset__deleted_date=None
         ).select_related(
             'task').select_related('dataset').get()
@@ -212,10 +212,10 @@ def ajax_task_csv(request, task_id):
         return HttpResponse(f'Task {task_id} task object not found', status=404)
 
     if task.task.status == 'FAILED':
-        return HttpResponse(f'Task {task.task_uuid} Failed')
+        return HttpResponse(f'Task {task.task_id} Failed')
 
     if task.task.status != 'SUCCESS':
-        return HttpResponse(f'Task {task.task_uuid} not complete (status: '
+        return HttpResponse(f'Task {task.task_id} not complete (status: '
                             f'{task.task.status})')
 
     # OK to return CSV
@@ -228,7 +228,7 @@ def ajax_task_csv(request, task_id):
 def ajax_surface_plot(request, task_id):
     try:
         task = DatasetTask.objects.filter(
-            task_uuid=task_id,
+            task_id=task_id,
             dataset__deleted_date=None
         ).select_related(
             'task').select_related('dataset').get()
@@ -268,4 +268,4 @@ def ajax_task_status(request, dataset_id):
     ).select_related('task')
     if not request.user.is_staff:
         tasks = tasks.filter(dataset__owner_id=request.user.id)
-    return JsonResponse({task.task_uuid: task.status for task in tasks})
+    return JsonResponse({task.task_id: task.status for task in tasks})
