@@ -11,5 +11,6 @@ ADD requirements.txt $MUSYC_HOME
 RUN pip install -r requirements.txt
 ADD manage.py $MUSYC_HOME
 ADD musycdjango $MUSYC_HOME/musycdjango
+ADD static $MUSYC_HOME/static
 ADD musyc_code $MUSYC_HOME/musyc_code
 ADD musycweb $MUSYC_HOME/musycweb
