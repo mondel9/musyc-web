@@ -109,6 +109,7 @@
 {% block tailscript %}
 <script src="//cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js"></script>
 <script>
+var retryInterval = 2000, maxRetryInterval = 30000;
 var pollStatus = function() {
     $.ajax({
         url: '{% url 'ajax_task_status' d.id %}',
@@ -139,7 +140,8 @@ var pollStatus = function() {
             }
             setProgress(numQueued, numStarted, numFailed, numComplete);
             if(checkAgain) {
-                setTimeout(pollStatus, 4000);
+                retryInterval = Math.min(retryInterval * 2, maxRetryInterval);
+                setTimeout(pollStatus, retryInterval);
             }
         },
         dataType: 'json'
@@ -217,7 +219,7 @@ $(function() {
             }
             setProgress(numQueued, numStarted, numFailed, numComplete);
             if(numQueued > 0 || numStarted > 0) {
-                setTimeout(pollStatus, 2000);
+                setTimeout(pollStatus, retryInterval);
             }
         }
     }).show();
