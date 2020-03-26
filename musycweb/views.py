@@ -147,7 +147,9 @@ def ajax_tasks(request, dataset_id):
         'task').order_by('drug1', 'drug2', 'sample')
 
     return JsonResponse({'data': [
-        [t.drug1, t.drug2, t.sample, t.status, t.task_id] for t in tasks]})
+        [t.drug1, t.drug2, t.sample, t.status, t.task_id, t.batch]
+        for t in tasks
+    ], 'use_batches': any(t.batch for t in tasks)})
 
 
 @login_required

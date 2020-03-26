@@ -4,6 +4,7 @@ from .models import Dataset, DatasetTask
 import pandas as pd
 import numpy as np
 from musyc_code.SynergyCalculator.SynergyCalculator import MuSyC_2D
+import itertools
 
 
 class DataError(Exception):
@@ -20,7 +21,8 @@ def test_add(self, x, y, sleep=0):
 
 @shared_task(bind=True)
 def fit_drug_combination(
-        self, dataset_id, drug1_name, drug2_name, sample, d1, d2, dip, dip_sd,
+        self, dataset_id, drug1_name, drug2_name, sample,
+        d1, d2, dip, dip_sd,
         E_fix, E_bnd,
         drug1_units, drug2_units, expt_date, output_dir,
         expt,
@@ -29,7 +31,8 @@ def fit_drug_combination(
         init_seed=None,
         fit_alg='mcnlls',
         find_opt=False,
-        fit_gamma=False
+        fit_gamma=False,
+        batch=None
 ):
     # Mark task as started
     if not self.request.called_directly:
@@ -97,8 +100,10 @@ def fit_drug_combination(
         drug1_name, drug2_name = drug2_name, drug1_name
         d1, d2 = d2, d1
 
+    expt_and_batch = f'{expt} [{batch}]' if batch else expt
+
     T = MuSyC_2D(d1,d2,dip,dip_sd,drug1_name,drug2_name,E_fix=E_fix,E_bnd=E_bnd,find_opt=find_opt,fit_gamma=fit_gamma,
-                  fit_alg=fit_alg,to_plot=False,sample=sample,expt=expt,metric_name=metric_name,
+                  fit_alg=fit_alg,to_plot=False,sample=sample,expt=expt_and_batch,metric_name=metric_name,
                   hill_orient=hill_orient,to_save=False,direc=None,
                   SAMPLES=50000,BURN=5000,PSO_PARTICLES=100,PSO_ITER=50,PSO_SPEED=10,
                   init_seed=init_seed,
@@ -114,6 +119,7 @@ def fit_drug_combination(
     T['dip'] = dip.tolist()
     T['dip_sd'] = dip_sd.tolist()
     T['expt_date'] = expt_date.tolist()
+    T['batch'] = batch
 
     for k in ('save_direc', 'to_save_traces', 'to_save_plots', 'memory_Mb'):
         del T[k]
@@ -144,6 +150,8 @@ def process_dataset(dataset_or_id):
 
     # Remove NaNs
     data = data[data['effect'].notna()]
+
+    use_batches = 'batch' in data.columns
 
     # Add in optional columns
     if 'effect.95ci' not in data.columns:
@@ -193,7 +201,6 @@ def process_dataset(dataset_or_id):
 
     # Loop through each (drug1, drug2, sample) combination and launch tasks
     dataset_tasks = []
-    import itertools
 
     def lfrom(lists, attr):
         return list(itertools.chain(*(l[attr].array for l in lists)))
@@ -201,15 +208,31 @@ def process_dataset(dataset_or_id):
     def sfrom(lists, attr):
         return list(set(itertools.chain(*(l[attr].array for l in lists))))
 
-    try:
-        for sample, samp_grp in data_expt.groupby(['sample'], sort=False):
-            data_ctrl_s = data_ctrl.loc[data_ctrl['sample'] == sample]
-            data_sa_1_s = data_sa_1.loc[data_sa_1['sample'] == sample]
-            data_sa_2_s = data_sa_2.loc[data_sa_2['sample'] == sample]
+    outer_grouping = ['batch', 'sample'] if use_batches else ['sample']
 
-            for group_name, grp_dat in samp_grp.groupby(
+    try:
+        for bat_smp, samp_grp in data_expt.groupby(outer_grouping, sort=False):
+            if use_batches:
+                batch, sample = bat_smp
+                data_ctrl_s = data_ctrl.loc[
+                      (data_ctrl['batch'] == batch) &
+                      (data_ctrl['sample'] == sample)]
+                data_sa_1_s = data_sa_1.loc[
+                      (data_sa_1['batch'] == batch) &
+                      (data_sa_1['sample'] == sample)]
+                data_sa_2_s = data_sa_2.loc[
+                      (data_sa_2['batch'] == batch) &
+                      (data_sa_2['sample'] == sample)]
+            else:
+                sample = bat_smp
+                batch = None
+                data_ctrl_s = data_ctrl.loc[data_ctrl['sample'] == sample]
+                data_sa_1_s = data_sa_1.loc[data_sa_1['sample'] == sample]
+                data_sa_2_s = data_sa_2.loc[data_sa_2['sample'] == sample]
+
+            for drug_names, grp_dat in samp_grp.groupby(
                     ['drug1', 'drug2'], sort=False):
-                drug1_name, drug2_name = group_name
+                drug1_name, drug2_name = drug_names
 
                 df_list = [
                     grp_dat,
@@ -226,6 +249,7 @@ def process_dataset(dataset_or_id):
                     drug1_name=drug1_name,
                     drug2_name=drug2_name,
                     sample=sample,
+                    batch=batch,
                     d1=lfrom(df_list, 'drug1.conc'),
                     d2=lfrom(df_list, 'drug2.conc'),
                     dip=lfrom(df_list, 'effect'),
@@ -247,6 +271,7 @@ def process_dataset(dataset_or_id):
                     drug1=drug1_name,
                     drug2=drug2_name,
                     sample=sample,
+                    batch=batch,
                     task_id=task.id
                 ))
     finally:

@@ -36,6 +36,7 @@ class DatasetTask(models.Model):
     drug1 = models.TextField()
     drug2 = models.TextField()
     sample = models.TextField()
+    batch = models.TextField(null=True, default=None)
     task = models.ForeignKey(TaskResult, on_delete=models.CASCADE,
                              db_constraint=False,
                              to_field='task_id')

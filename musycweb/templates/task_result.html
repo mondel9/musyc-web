@@ -7,6 +7,7 @@
         <li>Drug 1: {{ task.drug1 }}</li>
         <li>Drug 2: {{ task.drug2 }}</li>
         <li>Sample: {{ task.sample }}</li>
+        {% if task.batch %}<li>Batch: {{ task.batch }}</li>{% endif %}
         {% if task.task %}
             {% if task.result_dict.E_fix %}<li>Fixed Effect: {{ task.result_dict.E_fix }}</li>{% endif %}
             {% if task.result_dict.E_bnd %}<li>Effect bounds: {{ task.result_dict.E_bnd }}</li>{% endif %}

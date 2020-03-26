@@ -19,19 +19,10 @@
         <th>Drug 1</th>
         <th>Drug 2</th>
         <th>Sample</th>
+        <th>Batch</th>
         <th>Status</th>
     </tr>
     </thead>
-    {% for task in tasks %}
-        <tr>
-            <td>{{ task.drug1 }}</td>
-            <td>{{ task.drug2 }}</td>
-            <td>{{ task.sample }}</td>
-            <td><div id="task-{{ task.task_uuid }}-status">{% if task.status == 'SUCCESS' %}
-                <a href="{% url 'view_task' task.task_uuid %}">{{ task.status }}</a>
-            {% else %}{{ task.status }}{% endif %}</div></td>
-        </tr>
-    {% endfor %}
     </table>
 
     <br>
@@ -192,17 +183,23 @@ $(function() {
     $('#results-table').dataTable({
         ajax: '{% url 'ajax_tasks' d.id %}',
         columns: [
-            {},
-            {},
-            {},
-            {render:function ( data, type, row, meta ) {
+            {name: "drug1"},
+            {name: "drug2"},
+            {name: "sample"},
+            {name: "batch", data: 5},
+            {name: "status", data: 3, render:function ( data, type, row, meta ) {
                 if(data === 'SUCCESS' || data === 'FAILURE')
                     return '<div id="task-'+row[4]+'-status"><a href="/task/'+row[4]+'">'+data+'</a></div>';
                 else
-                    return '<div id="task-'+row[4]+'-status">'+data+'</div>'
-            }}
+                    return '<div id="task-'+row[4]+'-status">'+data+'</div>';
+            }},
         ],
         initComplete: function(settings, json) {
+            // hide batches column if not needed
+            if (!json['use_batches']) {
+                var api = new $.fn.dataTable.Api(settings);
+                api.column('batch:name').visible(false);
+            }
             $('#page-loading').hide();
             var numQueued = 0, numStarted = 0, numFailed = 0, numComplete = 0;
             for(var i=0; i<json['data'].length; i++) {
