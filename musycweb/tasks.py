@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 from musyc_code.SynergyCalculator.SynergyCalculator import MuSyC_2D
 import itertools
+from django_celery_results.models import TaskResult, states
 
 
 class DataError(Exception):
@@ -138,12 +139,46 @@ def _swap_drug1_drug2(data):
     })
 
 
-def process_dataset(dataset_or_id):
+def process_dataset(dataset_or_id, clear_existing=None):
     """ Split a dataset into drug combinations and submit as tasks """
     if isinstance(dataset_or_id, int):
         dataset = Dataset.objects.get(pk=dataset_or_id, deleted_date=None)
     else:
         dataset = dataset_or_id
+
+    assert clear_existing is None or clear_existing in ('unsuccessful', True)
+
+    if clear_existing:
+        # Delete TaskResults and their linked DatasetTasks
+        tq = TaskResult.objects.filter(datasettask__dataset_id=dataset.id)
+        if clear_existing == 'unsuccessful':
+            tq = tq.exclude(status=states.SUCCESS)
+        tq.delete()
+
+        # Delete DatasetTasks without any linked TaskResult
+        DatasetTask.objects.filter(
+            dataset_id=dataset.id
+        ).exclude(
+            task__in=TaskResult.objects.filter(
+                datasettask__dataset_id=dataset.id
+            )
+        ).delete()
+
+    if clear_existing == 'unsuccessful':
+        # Get list of completed tasks to skip
+        tasks_to_skip = set(
+            (t.drug1,
+             t.drug2,
+             t.sample,
+             t.batch)
+            for t in
+            DatasetTask.objects.filter(
+                dataset_id=dataset.id,
+                task__status=states.SUCCESS
+            )
+        )
+    else:
+        tasks_to_skip = set()
 
     # Read in file
     data = pd.read_table(dataset.file, delimiter=',')
@@ -233,6 +268,8 @@ def process_dataset(dataset_or_id):
             for drug_names, grp_dat in samp_grp.groupby(
                     ['drug1', 'drug2'], sort=False):
                 drug1_name, drug2_name = drug_names
+                if (drug1_name, drug2_name, sample, batch) in tasks_to_skip:
+                    continue
 
                 df_list = [
                     grp_dat,
