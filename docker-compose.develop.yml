@@ -2,6 +2,7 @@ version: '3.0'
 services:
   rabbitmq:
     image: rabbitmq:3-management
+    hostname: rabbitmq1
     env_file: musyc.env
     ports:
       - "5672:5672"
