@@ -74,6 +74,7 @@ def create_dataset(request):
                 process_dataset(d)
             except DataError as e:
                 form.add_error('file', e)
+                d.delete()
                 return _create_dataset_response(request, form)
 
             # Success
