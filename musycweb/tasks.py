@@ -6,6 +6,7 @@ import numpy as np
 from musyc_code.SynergyCalculator.SynergyCalculator import MuSyC_2D
 import itertools
 from django_celery_results.models import TaskResult, states
+from .forms import CreateDatasetForm
 
 
 class DataError(Exception):
@@ -181,7 +182,24 @@ def process_dataset(dataset_or_id, clear_existing=None):
         tasks_to_skip = set()
 
     # Read in file
-    data = pd.read_table(dataset.file, delimiter=',')
+    fields = {**CreateDatasetForm.REQUIRED_FIELDS,
+              **CreateDatasetForm.OPTIONAL_FIELDS}
+    try:
+        data = pd.read_table(
+            dataset.file,
+            delimiter=',',
+            dtype=fields
+        )
+    except ValueError as e:
+        err = str(e)
+        if 'could not convert string to float' in err:
+            float_fields = [f for f, v in fields.items() if v is float]
+            raise DataError(
+                'Error in one or more of the '
+                f'{", ".join(float_fields)} columns: {err}')
+
+        # Re-raise any unknown error
+        raise
 
     # Remove NaNs
     data = data[data['effect'].notna()]

@@ -5,7 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from .forms import CreateDatasetForm
 from .models import Dataset, DatasetTask
-from .tasks import process_dataset
+from .tasks import process_dataset, DataError
 from django.contrib import messages
 from django_celery_results.models import TaskResult
 from django.template.context_processors import csrf
@@ -39,6 +39,18 @@ def account(request):
     return render(request, 'account/account.html')
 
 
+def _create_dataset_response(request, form):
+    if 'ajax' in request.GET:
+        return JsonResponse({
+            'success': False,
+            'form_html': render_crispy_form(form, context=csrf(request))
+        })
+    else:
+        return render(request, 'create_dataset.html', {
+            'form': form
+        })
+
+
 @login_required
 def create_dataset(request):
     if request.method == 'POST':
@@ -58,8 +70,13 @@ def create_dataset(request):
             d.save()
 
             # Fire off the fitting tasks
-            process_dataset(d)
+            try:
+                process_dataset(d)
+            except DataError as e:
+                form.add_error('file', e)
+                return _create_dataset_response(request, form)
 
+            # Success
             if 'ajax' in request.GET:
                 return JsonResponse({'success': True, 'dataset_id': d.id})
             else:
@@ -68,15 +85,8 @@ def create_dataset(request):
                 ))
     else:
         form = CreateDatasetForm()
-    if 'ajax' in request.GET:
-        return JsonResponse({
-            'success': False,
-            'form_html': render_crispy_form(form, context=csrf(request))
-        })
-    else:
-        return render(request, 'create_dataset.html', {
-            'form': form
-        })
+
+    return _create_dataset_response(request, form)
 
 
 @login_required

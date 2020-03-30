@@ -10,16 +10,20 @@ from .models import Dataset
 
 class CreateDatasetForm(forms.Form):
     REQUIRED_FIELDS = {
-        'expt.date',
-        'drug1.conc',
-        'drug2.conc',
-        'effect',
-        'sample',
-        'drug1',
-        'drug2',
-        'drug1.units',
-        'drug2.units'
+        'expt.date': str,
+        'drug1.conc': float,
+        'drug2.conc': float,
+        'effect': float,
+        'sample': str,
+        'drug1': str,
+        'drug2': str,
+        'drug1.units': str,
+        'drug2.units': str
     }
+    OPTIONAL_FIELDS = {
+        'effect.95ci': float
+    }
+
     name = forms.CharField()
     file = forms.FileField()
     orientation = forms.ChoiceField(
@@ -71,7 +75,7 @@ class CreateDatasetForm(forms.Form):
                 'and not tab, for example.')
 
         headers = set(first_line.split(','))
-        missing_headers = self.REQUIRED_FIELDS.difference(headers)
+        missing_headers = self.REQUIRED_FIELDS.keys() - headers
         if missing_headers:
             raise forms.ValidationError(
                 f'Missing required fields: {", ".join(missing_headers)}'
