@@ -21,6 +21,7 @@ class CreateDatasetForm(forms.Form):
         'drug2.units': str
     }
     OPTIONAL_FIELDS = {
+        'batch': str,
         'effect.95ci': float
     }
 
