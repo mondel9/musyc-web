@@ -55,7 +55,8 @@ $modal.on('shown.bs.modal', function() {
         error: function () {
             uploadInProgress = false;
             $modal.modal('hide');
-            alert('An error occurred submitting the form');
+            alert('An error occurred submitting the form. This is probably an issue with the server. Please contact ' +
+                  'support at musyc@gmail.com if you need help.');
         }
     });
 }).on('hidden.bs.modal', function() {
