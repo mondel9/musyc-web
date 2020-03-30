@@ -221,11 +221,12 @@ CELERY_BROKER_URL = os.environ.get(
 # Sentry
 import sentry_sdk
 from sentry_sdk.integrations.django import DjangoIntegration
+from sentry_sdk.integrations.celery import CeleryIntegration
 
 if not DEBUG and 'SENTRY_DSN' in os.environ:
     sentry_sdk.init(
         dsn=os.environ['SENTRY_DSN'],
-        integrations=[DjangoIntegration()],
+        integrations=[DjangoIntegration(), CeleryIntegration()],
 
         # If you wish to associate users to errors (assuming you are using
         # django.contrib.auth) you may enable sending PII data.
