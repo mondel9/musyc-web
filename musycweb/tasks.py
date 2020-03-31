@@ -7,6 +7,8 @@ from musyc_code.SynergyCalculator.SynergyCalculator import MuSyC_2D
 import itertools
 from django_celery_results.models import TaskResult, states
 from .forms import CreateDatasetForm
+from django.contrib.messages import warning
+import warnings
 
 
 class DataError(Exception):
@@ -140,7 +142,15 @@ def _swap_drug1_drug2(data):
     })
 
 
-def process_dataset(dataset_or_id, clear_existing=None):
+def _warning(request, message):
+    if request:
+        # Use Django warnings, if available
+        warning(request, message)
+    else:
+        warnings.warn(message)
+
+
+def process_dataset(dataset_or_id, clear_existing=None, request=None):
     """ Split a dataset into drug combinations and submit as tasks """
     if isinstance(dataset_or_id, int):
         dataset = Dataset.objects.get(pk=dataset_or_id, deleted_date=None)
@@ -201,14 +211,44 @@ def process_dataset(dataset_or_id, clear_existing=None):
         # Re-raise any unknown error
         raise
 
-    # Remove NaNs
-    data = data[data['effect'].notna()]
-
     use_batches = 'batch' in data.columns
 
-    # Add in optional columns
+    # Start of validation and normalisation
+
+    # Warn about surplus columns
+    surplus_columns = set(data.columns) - set(fields.keys())
+    if surplus_columns:
+        _warning(request,
+                 f'Extra columns were ignored: {", ".join(surplus_columns)}')
+
+    # Drop empty rows
+    nrows = data.shape[0]
+    data.dropna(axis=0, how='all', thresh=None, subset=None, inplace=True)
+    if data.shape[0] != nrows:
+        _warning(request, 'Empty rows have been dropped')
+
+    # Drug concentrations should be non-negative
+    if (data['drug1.conc'] < 0).any() or (data['drug2.conc'] < 0).any():
+        raise DataError('Drug concentrations cannot be negative')
+
+    # Batches cannot contain empty values, if present
+    if use_batches and (data['batch'].isna().any() or
+                        (data['batch'].str.strip() == '').any()):
+        raise DataError('Batch column should not contain empty values')
+    # Remove rows with missing effect value
+    if data['effect'].isna().any():
+        _warning(request,
+                 'Effect columns which are missing/NaN will be removed')
+    data = data[data['effect'].notna()]
+    # Add in optional effect.95ci column if not present and validate
     if 'effect.95ci' not in data.columns:
         data['effect.95ci'] = min(data['effect']/100.)
+    else:
+        if data['effect.95ci'].isna().any():
+            raise DataError('effect.95ci column cannot contain blank/NA values')
+        if (data['effect.95ci'] <= 0).any():
+            raise DataError('effect.95ci column cannot contain zero or '
+                            'negative values')
 
     # Add SD
     data['effect.sd'] = data['effect.95ci'] / (2 * 1.96)

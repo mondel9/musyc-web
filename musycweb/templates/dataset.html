@@ -183,10 +183,10 @@ $(function() {
     $('#results-table').dataTable({
         ajax: '{% url 'ajax_tasks' d.id %}',
         columns: [
-            {name: "drug1"},
-            {name: "drug2"},
-            {name: "sample"},
-            {name: "batch", data: 5},
+            {name: "drug1", render: $.fn.dataTable.render.text()},
+            {name: "drug2", render: $.fn.dataTable.render.text()},
+            {name: "sample", render: $.fn.dataTable.render.text()},
+            {name: "batch", data: 5, render: $.fn.dataTable.render.text()},
             {name: "status", data: 3, render:function ( data, type, row, meta ) {
                 if(data === 'SUCCESS' || data === 'FAILURE')
                     return '<div id="task-'+row[4]+'-status"><a href="/task/'+row[4]+'">'+data+'</a></div>';

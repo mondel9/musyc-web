@@ -14,6 +14,7 @@ from musyc_code.SynergyCalculator.doseResponseSurfPlot import \
 from crispy_forms.utils import render_crispy_form
 import numpy as np
 import plotly.offline
+from django.utils.html import escape
 
 
 def about(request):
@@ -71,7 +72,7 @@ def create_dataset(request):
 
             # Fire off the fitting tasks
             try:
-                process_dataset(d)
+                process_dataset(d, request=request)
             except DataError as e:
                 form.add_error('file', e)
                 d.delete()
@@ -253,6 +254,11 @@ def ajax_surface_plot(request, task_id):
     # Get any plot
     rd = task.result_dict
     if rd:
+        # Apply HTML escapes
+        for field in ('sample', 'drug1_name', 'drug2_name', 'batch',
+                      'metric_name'):
+            if field in rd:
+                rd[field] = escape(rd[field])
         # Force a surface plot - can't handle matplotlib yet
         rd['boundary_sampling'] = 0
         rd['to_save_plots'] = 1

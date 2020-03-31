@@ -66,16 +66,23 @@ class CreateDatasetForm(forms.Form):
         try:
             c = c.decode('utf-8-sig')
         except UnicodeDecodeError:
-            raise forms.ValidationError('File needs to use Unicode UTF-8 '
-                                        'encoding. Is this a CSV file?')
+            raise forms.ValidationError(
+                'File needs to use Unicode UTF-8 '
+                'encoding. Either the encoding is wrong, or this isn\'t a '
+                'CSV file.')
 
         first_line = c.splitlines()[0]
         if ',' not in first_line:
             raise forms.ValidationError(
                 'No comma detected in first line. Check separator is comma '
                 'and not tab, for example.')
+        if first_line.lower() != first_line:
+            raise forms.ValidationError('Column names must be in lower case')
 
         headers = set(first_line.split(','))
+        # Remove quotes, if applicable
+        if all(h.startswith('"') and h.endswith('"') for h in headers):
+            headers = [h[1:-1] for h in headers]
         missing_headers = self.REQUIRED_FIELDS.keys() - headers
         if missing_headers:
             raise forms.ValidationError(
