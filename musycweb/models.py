@@ -97,6 +97,8 @@ class DatasetTask(models.Model):
         d = json.loads(self.task.result)
         if d.get('exc_type', '') == 'DataError' and 'exc_message' in d:
             return d['exc_message'][0]
+        elif d.get('exc_type', '') == 'SoftTimeLimitExceeded':
+            return 'Time limit exceeded'
         else:
             return 'Unknown error'
 

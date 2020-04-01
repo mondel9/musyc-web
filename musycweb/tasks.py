@@ -1,4 +1,5 @@
 from celery import shared_task
+from musycdjango.celery import app
 import time
 from .models import Dataset, DatasetTask
 import pandas as pd
@@ -150,7 +151,8 @@ def _warning(request, message):
         warnings.warn(message)
 
 
-def process_dataset(dataset_or_id, clear_existing=None, request=None):
+def process_dataset(dataset_or_id, clear_existing=None, request=None,
+                    priority=None):
     """ Split a dataset into drug combinations and submit as tasks """
     if isinstance(dataset_or_id, int):
         dataset = Dataset.objects.get(pk=dataset_or_id, deleted_date=None)
@@ -160,6 +162,15 @@ def process_dataset(dataset_or_id, clear_existing=None, request=None):
     assert clear_existing is None or clear_existing in ('unsuccessful', True)
 
     if clear_existing:
+        # Revoke any unprocessed tasks
+        app.control.revoke(
+            list(TaskResult.objects.filter(
+                datasettask__dataset_id=dataset.id,
+                status__in=states.UNREADY_STATES
+            ).values_list(
+                'task_id', flat=True
+            ))
+        )
         # Delete TaskResults and their linked DatasetTasks
         tq = TaskResult.objects.filter(datasettask__dataset_id=dataset.id)
         if clear_existing == 'unsuccessful':
@@ -242,7 +253,7 @@ def process_dataset(dataset_or_id, clear_existing=None, request=None):
     data = data[data['effect'].notna()]
     # Add in optional effect.95ci column if not present and validate
     if 'effect.95ci' not in data.columns:
-        data['effect.95ci'] = min(data['effect']/100.)
+        data['effect.95ci'] = abs(min(data['effect']/100.))
     else:
         if data['effect.95ci'].isna().any():
             raise DataError('effect.95ci column cannot contain blank/NA values')
@@ -339,25 +350,28 @@ def process_dataset(dataset_or_id, clear_existing=None, request=None):
                     _swap_drug1_drug2(data_sa_2_s.loc[data_sa_2['drug1'] == drug2_name])
                 ]
 
-                task = fit_drug_combination.delay(
-                    dataset_id=dataset.id,
-                    drug1_name=drug1_name,
-                    drug2_name=drug2_name,
-                    sample=sample,
-                    batch=batch,
-                    d1=lfrom(df_list, 'drug1.conc'),
-                    d2=lfrom(df_list, 'drug2.conc'),
-                    dip=lfrom(df_list, 'effect'),
-                    dip_sd=lfrom(df_list, 'effect.sd'),
-                    E_fix=e_fix,
-                    E_bnd=e_bnd,
-                    drug1_units=sfrom(df_list, 'drug1.units'),
-                    drug2_units=sfrom(df_list, 'drug2.units'),
-                    expt_date=sfrom(df_list, 'expt.date'),
-                    output_dir=None,
-                    expt=dataset.name,
-                    metric_name=dataset.metric_name,
-                    hill_orient=dataset.orientation
+                task = fit_drug_combination.apply_async(
+                    kwargs=dict(
+                        dataset_id=dataset.id,
+                        drug1_name=drug1_name,
+                        drug2_name=drug2_name,
+                        sample=sample,
+                        batch=batch,
+                        d1=lfrom(df_list, 'drug1.conc'),
+                        d2=lfrom(df_list, 'drug2.conc'),
+                        dip=lfrom(df_list, 'effect'),
+                        dip_sd=lfrom(df_list, 'effect.sd'),
+                        E_fix=e_fix,
+                        E_bnd=e_bnd,
+                        drug1_units=sfrom(df_list, 'drug1.units'),
+                        drug2_units=sfrom(df_list, 'drug2.units'),
+                        expt_date=sfrom(df_list, 'expt.date'),
+                        output_dir=None,
+                        expt=dataset.name,
+                        metric_name=dataset.metric_name,
+                        hill_orient=dataset.orientation
+                    ),
+                    priority=priority
                 )
 
                 # # Create DB entry for tracking this task

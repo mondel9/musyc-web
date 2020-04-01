@@ -217,6 +217,15 @@ CELERY_BROKER_URL = os.environ.get(
     'CELERY_BROKER_URL',
     f'amqp://{RABBITMQ_USER}:{RABBITMQ_PASS}@{RABBITMQ_HOST}//'
 )
+from kombu import Queue, Exchange
+CELERY_TASK_DEFAULT_PRIORITY = 5
+CELERY_TASK_QUEUE_MAX_PRIORITY = 10
+CELERY_TASK_QUEUES = (
+    Queue('celery', Exchange('celery'),
+          routing_key='celery',
+          queue_arguments={'x-max-priority': CELERY_TASK_QUEUE_MAX_PRIORITY}),
+)
+CELERY_TASK_SOFT_TIME_LIMIT = 60 * 60 * 24  # 24 hour time limit on tasks
 
 # Sentry
 import sentry_sdk
