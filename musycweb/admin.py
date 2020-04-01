@@ -19,19 +19,21 @@ class DatasetTaskAdmin(admin.ModelAdmin):
                     'owner',
                     'drug1', 'drug2', 'sample')
     list_display_links = None
-    list_select_related = ('task', 'dataset', 'dataset__owner')
+    list_select_related = ('dataset', 'dataset__owner')
+    list_prefetch_related = ('task', )
 
     def task_link(self, obj):
-        if not obj.task and not obj._task_set():
-            return {obj.task_uuid}
-        return format_html(f'<a href="/admin/django_celery_results/taskresult/{obj.task.id}/change/">{obj.task_uuid}</a>')
+        try:
+            return format_html(f'<a href="/admin/django_celery_results/taskresult/{obj.task.id}/change/">{obj.task_id}</a>')
+        except TaskResult.DoesNotExist:
+            return obj.task_id
     task_link.short_description = 'Task'
 
     def task_status(self, obj):
-        if not obj.task and not obj._task_set():
-            return 'Not found'
-
-        return obj.task.status
+        try:
+            return obj.task.status
+        except TaskResult.DoesNotExist:
+            return 'QUEUED'
     task_status.short_description = 'Status'
 
     def dataset_link(self, obj):
