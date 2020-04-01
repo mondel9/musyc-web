@@ -225,7 +225,12 @@ CELERY_TASK_QUEUES = (
           routing_key='celery',
           queue_arguments={'x-max-priority': CELERY_TASK_QUEUE_MAX_PRIORITY}),
 )
-CELERY_TASK_SOFT_TIME_LIMIT = 60 * 60 * 24  # 24 hour time limit on tasks
+# Time limit before tasks are aborted (24 hours)
+CELERY_TASK_SOFT_TIME_LIMIT = 60 * 60 * 24
+# Datasets with more tasks than this are run at priority=3
+CELERY_DEPRIORITISE_SIZE_L3 = 1000
+# Datasets with more tasks than this are run at priority=2
+CELERY_DEPRIORITISE_SIZE_L2 = 10000
 
 # Sentry
 import sentry_sdk

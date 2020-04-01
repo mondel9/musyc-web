@@ -10,6 +10,7 @@ from django_celery_results.models import TaskResult, states
 from .forms import CreateDatasetForm
 from django.contrib.messages import warning
 import warnings
+from django.conf import settings
 
 
 class DataError(Exception):
@@ -263,6 +264,15 @@ def process_dataset(dataset_or_id, clear_existing=None, request=None,
 
     # Add SD
     data['effect.sd'] = data['effect.95ci'] / (2 * 1.96)
+
+    if priority is None:
+        if data.shape[0] >= settings.CELERY_DEPRIORITISE_SIZE_L2:
+            priority = 2
+        elif data.shape[0] >= settings.CELERY_DEPRIORITISE_SIZE_L3:
+            priority = 3
+        if priority:
+            _warning(request, 'Tasks will run at lower priority due to large '
+                              'dataset size')
 
     # Global fitting bounds
     e_fix = None
