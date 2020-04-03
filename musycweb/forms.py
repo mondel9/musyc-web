@@ -95,6 +95,11 @@ class CreateDatasetForm(forms.Form):
         if self.cleaned_data['effect_constraint'] in ('none', 'bounded'):
             return None
 
+        if self.cleaned_data['e0_fixed_value'] is not None:
+            if self.cleaned_data['emax_fixed_value'] is None:
+                raise forms.ValidationError('Must specify fixed values for '
+                                            'both E0 and Emax')
+
         return self.cleaned_data['e0_fixed_value']
 
     def clean_emax_fixed_value(self):
