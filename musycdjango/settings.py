@@ -141,6 +141,10 @@ LOGIN_REDIRECT_URL = 'index'
 
 WSGI_APPLICATION = 'musycdjango.wsgi.application'
 
+if os.environ.get('MUSYC_USE_TLS', 'false').lower() == 'true':
+    ACCOUNT_DEFAULT_HTTP_PROTOCOL = 'https'
+    SESSION_COOKIE_SECURE = True
+    CRSF_COOKIE_SECURE = True
 
 # Database
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
