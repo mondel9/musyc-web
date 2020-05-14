@@ -254,7 +254,10 @@ def process_dataset(dataset_or_id, clear_existing=None, request=None,
     data = data[data['effect'].notna()]
     # Add in optional effect.95ci column if not present and validate
     if 'effect.95ci' not in data.columns:
-        data['effect.95ci'] = abs(min(data['effect']/100.))
+        ci_val = abs(min(data['effect']/100.))
+        if ci_val == 0:
+            ci_val = 1e-16
+        data['effect.95ci'] = ci_val
     else:
         if data['effect.95ci'].isna().any():
             raise DataError('effect.95ci column cannot contain blank/NA values')
