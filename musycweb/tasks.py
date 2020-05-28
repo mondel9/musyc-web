@@ -35,7 +35,7 @@ def fit_drug_combination(
         metric_name,
         hill_orient,
         init_seed=None,
-        fit_alg='mcnlls',
+        fit_alg='nlls_mcnlls',
         find_opt=False,
         fit_gamma=False,
         batch=None
