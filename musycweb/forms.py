@@ -91,7 +91,7 @@ class CreateDatasetForm(forms.Form):
 
         return f
 
-    def clean_e0_fixed_value(self):
+    def _clean_e0_fixed_value(self):
         if self.cleaned_data['effect_constraint'] in ('none', 'bounded'):
             return None
 
@@ -102,7 +102,7 @@ class CreateDatasetForm(forms.Form):
 
         return self.cleaned_data['e0_fixed_value']
 
-    def clean_emax_fixed_value(self):
+    def _clean_emax_fixed_value(self):
         if self.cleaned_data['effect_constraint'] in ('none', 'bounded'):
             return None
 
@@ -126,7 +126,7 @@ class CreateDatasetForm(forms.Form):
 
         return self.cleaned_data['emax_fixed_value']
 
-    def clean_e0_lower_bound(self):
+    def _clean_e0_lower_bound(self):
         if self.cleaned_data['effect_constraint'] == 'none':
             return None
 
@@ -135,7 +135,7 @@ class CreateDatasetForm(forms.Form):
 
         return self.cleaned_data['e0_lower_bound']
 
-    def clean_emax_lower_bound(self):
+    def _clean_emax_lower_bound(self):
         if self.cleaned_data['effect_constraint'] == 'none':
             return None
 
@@ -144,7 +144,7 @@ class CreateDatasetForm(forms.Form):
 
         return self.cleaned_data['emax_lower_bound']
 
-    def clean_e0_upper_bound(self):
+    def _clean_e0_upper_bound(self):
         if self.cleaned_data['effect_constraint'] == 'none':
             return None
 
@@ -160,7 +160,7 @@ class CreateDatasetForm(forms.Form):
 
         return self.cleaned_data['e0_upper_bound']
 
-    def clean_emax_upper_bound(self):
+    def _clean_emax_upper_bound(self):
         if self.cleaned_data['effect_constraint'] == 'none':
             return None
 
@@ -175,6 +175,17 @@ class CreateDatasetForm(forms.Form):
             return self.cleaned_data['emax_fixed_value']
 
         return self.cleaned_data['emax_upper_bound']
+
+    def clean(self):
+        # Standard field cleaning can't rely on field ordering, so we use
+        # the clean method with manual field orderring
+        self.cleaned_data['e0_fixed_value'] = self._clean_e0_fixed_value()
+        self.cleaned_data['emax_fixed_value'] = self._clean_emax_fixed_value()
+        self.cleaned_data['e0_lower_bound'] = self._clean_e0_lower_bound()
+        self.cleaned_data['emax_lower_bound'] = self._clean_emax_lower_bound()
+        self.cleaned_data['e0_upper_bound'] = self._clean_e0_upper_bound()
+        self.cleaned_data['emax_upper_bound'] = self._clean_emax_upper_bound()
+        return self.cleaned_data
 
 
 class CentredAuthForm(allauth_forms.LoginForm):
