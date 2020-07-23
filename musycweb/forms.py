@@ -6,6 +6,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth.models import Group
 from .models import Dataset
+import numpy as np
 
 
 class CreateDatasetForm(forms.Form):
@@ -149,6 +150,11 @@ class CreateDatasetForm(forms.Form):
             return None
 
         if self.cleaned_data['effect_constraint'] == 'bounded':
+            if self.cleaned_data['e0_lower_bound'] is None:
+                self.cleaned_data['e0_lower_bound'] = -np.inf
+            if self.cleaned_data['e0_upper_bound'] is None:
+                self.cleaned_data['e0_upper_bound'] = np.inf
+
             if self.cleaned_data['e0_upper_bound'] < \
                     self.cleaned_data['e0_lower_bound']:
                 raise forms.ValidationError(
@@ -165,6 +171,11 @@ class CreateDatasetForm(forms.Form):
             return None
 
         if self.cleaned_data['effect_constraint'] == 'bounded':
+            if self.cleaned_data['emax_lower_bound'] is None:
+                self.cleaned_data['emax_lower_bound'] = -np.inf
+            if self.cleaned_data['emax_upper_bound'] is None:
+                self.cleaned_data['emax_upper_bound'] = np.inf
+
             if self.cleaned_data['emax_upper_bound'] < \
                     self.cleaned_data['emax_lower_bound']:
                 raise forms.ValidationError(
@@ -178,7 +189,7 @@ class CreateDatasetForm(forms.Form):
 
     def clean(self):
         # Standard field cleaning can't rely on field ordering, so we use
-        # the clean method with manual field orderring
+        # the clean method with manual field ordering
         self.cleaned_data['e0_fixed_value'] = self._clean_e0_fixed_value()
         self.cleaned_data['emax_fixed_value'] = self._clean_emax_fixed_value()
         self.cleaned_data['e0_lower_bound'] = self._clean_e0_lower_bound()
