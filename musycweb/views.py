@@ -25,6 +25,14 @@ def help(request):
     return render(request, 'help.html', {})
 
 
+def terms(request):
+    return render(
+        request,
+        'terms_popup.html' if 'popup' in request.GET else 'terms_with_nav.html',
+        {}
+    )
+
+
 @login_required
 def index(request):
     datasets = Dataset.objects.filter(

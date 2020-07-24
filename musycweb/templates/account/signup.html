@@ -8,4 +8,16 @@
   <a href="{{ login_url }}">log in</a>.</p>
 
 {% crispy form %}
+
+{% endblock %}
+{% block tailscript %}
+<script>
+let params = `scrollbars=no,resizable=no,status=no,location=no,toolbar=no,menubar=no,
+width=600,height=300,left=100,top=100`;
+
+$('#terms-link').click(function(e){
+    e.preventDefault();
+    open('{% url 'terms' %}?popup', 'Terms and Conditions', params);
+});
+</script>
 {% endblock %}

@@ -1,12 +1,14 @@
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Submit
 from allauth.account import forms as allauth_forms
+from allauth.account.adapter import DefaultAccountAdapter
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth.models import Group
-from .models import Dataset
+from .models import Dataset, Profile
 import numpy as np
+import swot
 
 
 class CreateDatasetForm(forms.Form):
@@ -209,6 +211,17 @@ class CentredAuthForm(allauth_forms.LoginForm):
                                      css_class='btn-block'))
 
 
+def assert_email_academic(email):
+    if not swot.is_academic(email):
+        raise forms.ValidationError(
+            'Please use an email address from an academic or non-profit '
+            'institution. Contact musyc@gmail.com if you would like your '
+            'non-profit institution to be added to our list.'
+        )
+
+    return email
+
+
 class AddEmailForm(allauth_forms.AddEmailForm):
     def __init__(self, *args, **kwargs):
         super(AddEmailForm, self).__init__(*args, **kwargs)
@@ -217,6 +230,9 @@ class AddEmailForm(allauth_forms.AddEmailForm):
         self.helper.form_class = 'form-vertical'
         self.helper.add_input(Submit('action_add', 'Add email',
                                      css_class='btn-block'))
+
+    def clean_email(self):
+        return assert_email_academic(self.cleaned_data['email'])
 
 
 class ResetPasswordForm(allauth_forms.ResetPasswordForm):
@@ -260,6 +276,17 @@ class ChangePasswordForm(allauth_forms.ChangePasswordForm):
 
 
 class SignUpForm(allauth_forms.SignupForm):
+    first_name = forms.CharField(max_length=30)
+    last_name = forms.CharField(max_length=30)
+    organization = forms.CharField(max_length=30)
+    accept_eula = forms.BooleanField(
+        required=True,
+        label='I accept the <a id="terms-link" href="/terms?popup" '
+              'target="_blank">terms and conditions</a>')
+
+    field_order = ['email', 'first_name', 'last_name', 'organization',
+                   'password1', 'password2', 'accept_eula']
+
     def __init__(self, *args, **kwargs):
         super(SignUpForm, self).__init__(*args, **kwargs)
         self.helper = FormHelper()
@@ -267,6 +294,29 @@ class SignUpForm(allauth_forms.SignupForm):
         self.helper.form_class = 'form-vertical'
         self.helper.add_input(Submit('submit', 'Sign Up',
                                      css_class='btn-block'))
+
+    def signup(self, request, user):
+        return user
+
+    def clean_email(self):
+        return assert_email_academic(self.cleaned_data['email'])
+
+
+class AccountAdapter(DefaultAccountAdapter):
+    def save_user(self, request, user, form, commit=True):
+        user = super().save_user(request, user, form, commit)
+
+        profile = Profile(
+            user=user,
+            first_name=form.cleaned_data['first_name'],
+            last_name=form.cleaned_data['last_name'],
+            organization=form.cleaned_data['organization'],
+            accept_eula=form.cleaned_data['accept_eula']
+        )
+        if commit:
+            profile.save()
+
+        return user
 
 
 class GroupAdminForm(forms.ModelForm):

@@ -6,6 +6,7 @@ urlpatterns = [
     path('', views.index, name='index'),
     path('about', views.about, name='about'),
     path('help', views.help, name='help'),
+    path('terms', views.terms, name='terms'),
     path('account', views.account, name='account'),
     path('upload', views.create_dataset, name='create_dataset'),
     path('dataset/<int:dataset_id>', views.view_dataset, name='view_dataset'),

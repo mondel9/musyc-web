@@ -5,6 +5,16 @@ import json
 import io
 
 
+class Profile(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL,
+                                related_name='profile',
+                                on_delete=models.CASCADE)
+    first_name = models.TextField(default=None, blank=True)
+    last_name = models.TextField(default=None, blank=True)
+    organization = models.TextField(default=None, null=True)
+    accept_eula = models.BooleanField(default=False)
+
+
 class Dataset(models.Model):
     ORIENTATION_CHOICES = (
         (0, 'Emax>E0'),

@@ -125,6 +125,7 @@ AUTHENTICATION_BACKENDS = (
     'allauth.account.auth_backends.AuthenticationBackend',
 )
 ACCOUNT_AUTHENTICATION_METHOD = 'email'
+ACCOUNT_ADAPTER = 'musycweb.forms.AccountAdapter'
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_EMAIL_VERIFICATION = 'none' if DEBUG else 'mandatory'
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None
