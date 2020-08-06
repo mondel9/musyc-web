@@ -94,6 +94,16 @@ class CreateDatasetForm(forms.Form):
 
         return f
 
+    def _clean_orientation(self):
+        try:
+            orientation = int(self.cleaned_data['orientation'])
+            if orientation not in (0, 1):
+                raise ValueError()
+        except ValueError:
+            raise forms.ValidationError('Orientation must be 0 or 1')
+
+        return orientation
+
     def _clean_e0_fixed_value(self):
         if self.cleaned_data['effect_constraint'] in ('none', 'bounded'):
             return None
@@ -192,6 +202,7 @@ class CreateDatasetForm(forms.Form):
     def clean(self):
         # Standard field cleaning can't rely on field ordering, so we use
         # the clean method with manual field ordering
+        self.cleaned_data['orientation'] = self._clean_orientation()
         self.cleaned_data['e0_fixed_value'] = self._clean_e0_fixed_value()
         self.cleaned_data['emax_fixed_value'] = self._clean_emax_fixed_value()
         self.cleaned_data['e0_lower_bound'] = self._clean_e0_lower_bound()
