@@ -49,6 +49,9 @@
             data: null,
             success: function (data) {
                 $('#plotly-outer').html(data);
+                if (/^((?!chrome|android).)*safari/i.test(navigator.userAgent)) {
+                    Plotly.restyle($('.plotly-graph-div')[0], {opacity: 1})
+                }
             },
             error: function() {
                 $('#plotly-outer').html('<div style="margin:auto"><strong>Error</strong></div>');
