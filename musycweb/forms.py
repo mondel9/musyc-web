@@ -223,12 +223,13 @@ class CentredAuthForm(allauth_forms.LoginForm):
 
 
 def assert_email_academic(email):
-    if not swot.is_academic(email):
-        raise forms.ValidationError(
-            'Please use an email address from an academic or non-profit '
-            'institution. Contact musyc@gmail.com if you would like your '
-            'non-profit institution to be added to our list.'
-        )
+    # 2020-01-04 disable this check, not reliable. Just allow any email for now.
+    # if not swot.is_academic(email):
+    #     raise forms.ValidationError(
+    #         'Please use an email address from an academic or non-profit '
+    #         'institution. Contact musyc@gmail.com if you would like your '
+    #         'non-profit institution to be added to our list.'
+    #     )
 
     return email
 
