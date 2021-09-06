@@ -85,6 +85,10 @@ def fit_drug_combination(
         print(string)
         dip_sd[dip_sd <= 0] = min(dip_sd[dip_sd > 0])
 
+    if len(dip) < 4:
+        raise DataError('At least four data points are needed to fit '
+                        f'dose-response surface (found: {len(dip)})')
+
     # Consider the special case when one of the drugs has no effect.
     # Flip drug names around so that the no effect drug is drug 1
     if E_fix is not None:
