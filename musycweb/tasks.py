@@ -108,13 +108,22 @@ def fit_drug_combination(
 
     expt_and_batch = f'{expt} [{batch}]' if batch else expt
 
-    T = MuSyC_2D(d1,d2,dip,dip_sd,drug1_name,drug2_name,E_fix=E_fix,E_bnd=E_bnd,find_opt=find_opt,fit_gamma=fit_gamma,
-                  fit_alg=fit_alg,to_plot=False,sample=sample,expt=expt_and_batch,metric_name=metric_name,
-                  hill_orient=hill_orient,to_save=False,direc=None,
-                  SAMPLES=50000,BURN=5000,PSO_PARTICLES=100,PSO_ITER=50,PSO_SPEED=10,
-                  init_seed=init_seed,
-                 # other_metrics=other_metrics
-                 )
+    try:
+        T = MuSyC_2D(d1,d2,dip,dip_sd,drug1_name,drug2_name,E_fix=E_fix,E_bnd=E_bnd,find_opt=find_opt,fit_gamma=fit_gamma,
+                      fit_alg=fit_alg,to_plot=False,sample=sample,expt=expt_and_batch,metric_name=metric_name,
+                      hill_orient=hill_orient,to_save=False,direc=None,
+                      SAMPLES=50000,BURN=5000,PSO_PARTICLES=100,PSO_ITER=50,PSO_SPEED=10,
+                      init_seed=init_seed,
+                     # other_metrics=other_metrics
+                     )
+    except ValueError as e:
+        err = str(e)
+        if 'lower bound must be strictly less than each upper bound' in err:
+            raise DataError(
+                'Lower bound must be strictly less than upper bound')
+
+        # Re-raise any unknown error
+        raise
 
     T['E_fix'] = E_fix
     T['E_bnd'] = E_bnd
