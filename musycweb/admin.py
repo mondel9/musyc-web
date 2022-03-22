@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Dataset, DatasetTask
+from .models import Dataset, DatasetTask, Project
 from django.urls import reverse
 from django.utils.html import format_html
 from django_celery_results.models import TaskResult
@@ -8,8 +8,11 @@ admin.site.site_header = 'MuSyC Administration'
 admin.site.site_title = 'MuSyC Admin'
 
 
+class ProjectAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name', 'description', 'owner', 'num_datasets')
+
 class DatasetAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'creation_date', 'owner')
+    list_display = ('id', 'name', 'creation_date', 'owner', 'project_id)
 
 
 class DatasetTaskAdmin(admin.ModelAdmin):
@@ -46,3 +49,6 @@ class DatasetTaskAdmin(admin.ModelAdmin):
 
 admin.site.register(Dataset, DatasetAdmin)
 admin.site.register(DatasetTask, DatasetTaskAdmin)
+admin.site.register(Project, ProjectAdmin)
+
+
