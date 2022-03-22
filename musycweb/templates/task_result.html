@@ -1,64 +1,202 @@
 {% extends "base.html" %}
 
-{% block title %}Model Fit Result{% endblock %}
+{% block title %}
+<br>
+<p style="font-size: 1.2rem;">
+    <a href="{% url 'view_dataset' task.dataset_id %}">
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-return-left" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path fill-rule="evenodd" d="M14.5 1.5a.5.5 0 0 1 .5.5v4.8a2.5 2.5 0 0 1-2.5 2.5H2.707l3.347 3.346a.5.5 0 0 1-.708.708l-4.2-4.2a.5.5 0 0 1 0-.708l4-4a.5.5 0 1 1 .708.708L2.707 8.3H12.5A1.5 1.5 0 0 0 14 6.8V2a.5.5 0 0 1 .5-.5z"/>
+        </svg>
+        Dataset Tasks
+    </a>
+</p>
+{% endblock %}
 {% block content %}
-    <ul>
-        <li>Dataset: {{ task.dataset.name }} (Uploaded: {{ task.dataset.creation_date }})</li>
-        <li>Drug 1: {{ task.drug1 }}</li>
-        <li>Drug 2: {{ task.drug2 }}</li>
-        <li>Sample: {{ task.sample }}</li>
-        {% if task.batch %}<li>Batch: {{ task.batch }}</li>{% endif %}
-        {% if task.task %}
-            {% if task.result_dict.E_fix %}<li>Fixed Effect: {{ task.result_dict.E_fix }}</li>{% endif %}
-            {% if task.result_dict.E_bnd %}<li>Effect bounds: {{ task.result_dict.E_bnd }}</li>{% endif %}
-            <li>Beta: {{ task.result_dict.beta }} (Confidence interval: {{ task.result_dict.beta_ci }})</li>
-            <li>Log alpha1: {{ task.result_dict.log_alpha1 }} (Confidence interval: {{ task.result_dict.log_alpha1_ci }})</li>
-            <li>Log alpha2: {{ task.result_dict.log_alpha2 }} (Confidence interval: {{ task.result_dict.log_alpha2_ci }})</li>
-            <li>Task Start Date: {{ task.task.date_created }}</li>
-            <li>Task End Date: {{ task.task.date_done }}</li>
-        {% endif %}
-    </ul>
-
-    {% if task.status == 'SUCCESS' %}
-
-    <div id="plotly-outer" style="height:450px;border:1px solid #ddd" class="d-flex justify-content-center">
-        <div class="spinner-border" role="status" style="margin:auto">
-          <span class="sr-only">Loading...</span>
+<div class="custom-container" style="height: 100%; min-width: 98vw">
+    <div class="row">
+        <div class="col-sm-8">
+            <h3>Model Fit</h3>
         </div>
-    </div><br>
-    <a class="btn btn-secondary btn-block" href="{% url 'ajax_task_csv' task.task_id %}">Download parameters (CSV)</a>
-    {% elif task.status == 'FAILURE' %}
-        <div class="text-center alert alert-danger">
-            <h3>{{ task.status }}</h3>
-            <p>{{ task.error_message }}</p>
+        <div class="col-sm-4">
+            <a role="button" class="btn btn-primary btn-block" href="{% url 'ajax_task_csv' task.task_id %}">
+                <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-download" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+                    <path fill-rule="evenodd" d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+                </svg>
+                Download Results (CSV)
+            </a>
         </div>
-    {% else %}
-        <div class="text-center"><h3>{{ task.status }}</h3></div>
-    {% endif %}
-    <br>
-    <a class="btn btn-secondary btn-block" href="{% url 'view_dataset' task.dataset_id %}">Back to Dataset</a>
-    <br>
+    </div>
+</div>
+<br>
+<div class="custom-container" style="height: 100%; min-width: 98vw">
+<div class="card-box shadow-sm">
+    <h5 class="header-title mt-0 mb-3">Dataset: {{ task.dataset.name }} (Uploaded: {{ task.dataset.creation_date }})</h5>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <tbody>
+                <tr><td>Drug 1</td><td>{{ task.drug1 }}</td></tr>
+                <tr><td>Drug 2</td><td>{{ task.drug2 }}</td></tr>
+                <tr><td>Sample</td><td>{{ task.sample }}</td></tr>
+                {% if task.batch %}<tr><td>Batch</td><td>{{ task.batch }}</td></tr>{% endif %}
+                {% if task.task %}
+                    {% if task.result_dict.E_fix %}<tr><td>Fixed Effect</td><td>{{ task.result_dict.E_fix }}</td></tr>{% endif %}
+                    {% if task.result_dict.E_bnd %}<tr><td>Effect Bounds</td><td>{{ task.result_dict.E_bnd }}</td></tr>{% endif %}
+                    <tr><td>Beta</td><td>{{ task.result_dict.beta|stringformat:".3g" }} (95% Confidence interval: [{{ task.result_dict.beta_ci|first|floatformat:3 }}, {{ task.result_dict.beta_ci|last|floatformat:3 }}])</td></tr>
+                    <tr><td>Log alpha1</td><td>{{ task.result_dict.log_alpha1|stringformat:".3g" }} (95% Confidence interval: [{{ task.result_dict.log_alpha1_ci|first|floatformat:3 }}, {{ task.result_dict.log_alpha1_ci|last|floatformat:3 }}])</td></tr>
+                    <tr><td>Log alpha2</td><td>{{ task.result_dict.log_alpha2|stringformat:".3g" }} (95% Confidence interval: [{{ task.result_dict.log_alpha2_ci|first|floatformat:3 }}, {{ task.result_dict.log_alpha2_ci|last|floatformat:3 }}])</td></tr>
+                    <tr><td>R Squared</td><td>{{task.result_dict.R2|stringformat:".3g"}}</td></tr>
+                    <tr><td>Task Start Date</td><td>{{ task.task.date_created }}</td></tr>
+                    <tr><td>Task End Date</td><td>{{ task.task.date_done }}</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+</div>
+<div class="custom-container" style="height: 100%; min-width: 98vw">
+{% if task.status == 'SUCCESS' %}
+<div class="row-full">
+    <div class="card shadow-sm" style="border: 1.5px solid #e3e3e3; padding-bottom: 1rem;">
+        <h5 class="card-header">
+            <div class="row">
+                <div class="col align-self-center">
+                    Dose Response Surface Plot
+                </div>
+                <div class="col-sm-4">
+                    <button id="download-data-1" type="button" class="btn btn-outline-dark" style="float: right;">Download HTML</button>
+                </div>
+            </div>
+        </h5>
+        <div id="plotly-outerS" style="height:600px;" class="d-flex justify-content-center">
+            <div class="spinner-border" role="status" style="margin:auto">
+            <span class="sr-only">Loading...</span>
+            </div>
+        </div>
+    </div>
+</div>
+<br>
+<div class="row">
+    <div class="col-6">
+        <div class="card shadow-sm" style="border: 1.5px solid #e3e3e3; padding-bottom: 1rem;">
+            <h5 class="card-header">
+                <div class="row">
+                    <div class="col align-self-center">
+                        Dose Response Curve {{ task.drug1 }}
+                    </div>
+                    <div class="col-sm-4">
+                        <button id="download-data-2" type="button" class="btn btn-outline-dark" style="float: right;">Download HTML</button>
+                    </div>
+                </div>
+            </h5>
+            <div id="plotly-outerC1" style="height:600px;" class="d-flex justify-content-center">
+                <div class="spinner-border" role="status" style="margin:auto">
+                <span class="sr-only">Loading...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6">
+        <div class="card shadow-sm" style="border: 1.5px solid #e3e3e3; padding-bottom: 1rem;">
+            <h5 class="card-header">
+                <div class="row">
+                    <div class="col align-self-center">
+                        Dose Response Curve {{ task.drug2 }}
+                    </div>
+                    <div class="col-sm-4">
+                        <button id="download-data-3" type="button" class="btn btn-outline-dark" style="float: right;">Download HTML</button>
+                    </div>
+                </div>
+            </h5>
+            <div id="plotly-outerC2" style="height:600px;" class="d-flex justify-content-center">
+                <div class="spinner-border" role="status" style="margin:auto">
+                <span class="sr-only">Loading...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% elif task.status == 'FAILURE' %}
+    <div class="text-center alert alert-danger">
+        <h3>{{ task.status }}</h3>
+        <p>{{ task.error_message }}</p>
+    </div>
+{% else %}
+    <div class="text-center"><h3>{{ task.status }}</h3></div>
+{% endif %}
+<br>
+</div>
 {% endblock %}
 {% block tailscript %}
 {% if task.status == 'SUCCESS' %}
 <script src="https://cdn.plot.ly/plotly-1.52.2.min.js"></script>
 <script>
-    $(function() {
-        $.ajax({
-            url: '{% url 'ajax_surface_plot' task.task_id %}',
-            data: null,
-            success: function (data) {
-                $('#plotly-outer').html(data);
-                if (/^((?!chrome|android).)*safari/i.test(navigator.userAgent)) {
-                    Plotly.restyle($('.plotly-graph-div')[0], {opacity: 1})
-                }
-            },
-            error: function() {
-                $('#plotly-outer').html('<div style="margin:auto"><strong>Error</strong></div>');
-            },
-            dataType: 'html'
-        });
+$( "div.row-full").parent().css( "margin", "0");
+
+$(function() {
+    $.ajax({
+        url: '{% url 'ajax_surface_plot' task.task_id %}',
+        data: null,
+        success: function (data) {
+            $('#plotly-outerS').html(data);
+            if (/^((?!chrome|android).)*safari/i.test(navigator.userAgent)) {
+                Plotly.restyle($('.plotly-graph-div')[0], {opacity: 1})
+            }
+        },
+        error: function() {
+            $('#plotly-outerS').html('<div style="margin:auto"><strong>Error</strong></div>');
+        },
+        dataType: 'html'
     });
+
+    $.ajax({
+        url: "{% url 'ajax_curve_plot' task.task_id %}",
+        data: null,
+        success: function (data) {
+            $('#plotly-outerC1').html(data);
+            if (/^((?!chrome|android).)*safari/i.test(navigator.userAgent)) {
+                 Plotly.restyle($('.plotly-graph-div')[0], {opacity: 1})
+             }
+        },
+        error: function() {
+            $('#plotly-outerC1').html('<div style="margin:auto"><strong>Error</strong></div>');
+        },
+        dataType: 'html'
+    });
+
+    $.ajax({
+        url: "{% url 'ajax_curve2_plot' task.task_id %}",
+        data: null,
+        success: function (data) {
+            $('#plotly-outerC2').html(data);
+            if (/^((?!chrome|android).)*safari/i.test(navigator.userAgent)) {
+                 Plotly.restyle($('.plotly-graph-div')[0], {opacity: 1})
+             }
+        },
+        error: function() {
+            $('#plotly-outerC2').html('<div style="margin:auto"><strong>Error</strong></div>');
+        },
+        dataType: 'html'
+    });
+});
+    
+// Download plot HTML
+$("#download-data-1").click(function(e) {
+    e.preventDefault();
+    window.location = "{% url 'ajax_get_plot2' task.task_id %}" + "?plotType=surface&download=1";
+});
+
+$("#download-data-2").click(function(e) {
+    e.preventDefault();
+    window.location = "{% url 'ajax_get_plot2' task.task_id %}" + "?plotType=drCurve1&download=1";
+});
+
+$("#download-data-3").click(function(e) {
+    e.preventDefault();
+    window.location = "{% url 'ajax_get_plot2' task.task_id %}" + "?plotType=drCurve2&download=1";
+});
 </script>
 {% endif %}
 {% endblock %}
