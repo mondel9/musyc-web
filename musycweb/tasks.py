@@ -4,6 +4,8 @@ import time
 from .models import Dataset, DatasetTask
 import pandas as pd
 import numpy as np
+import re
+import string
 from musyc_code.SynergyCalculator.SynergyCalculator import MuSyC_2D
 import itertools
 from django_celery_results.models import TaskResult, states
@@ -245,6 +247,49 @@ def process_dataset(dataset_or_id, clear_existing=None, request=None,
     if surplus_columns:
         _warning(request,
                  f'Extra columns were ignored: {", ".join(surplus_columns)}')
+        
+    # Warn about capitalized column names and convert
+    for col in data.columns:
+        res = any(letter.isupper() for letter in col)
+        if res:
+            data.columns = [str(x).lower() for x in data.columns]
+            _warning(request, 'Converting column names to lowercase')
+
+    # Check for commas in drug names and sample name
+    res1 = data.loc[data['drug1'].str.contains(','), :]
+    if not res1.empty:
+        raise DataError('Drug name should not contain commas')
+    
+    res2 = data.loc[data['drug2'].str.contains(','), :]
+    if not res2.empty:
+        raise DataError('Drug name should not contain commas')
+
+    res3 = data.loc[data['sample'].str.contains(','), :]
+    if not res3.empty:
+        raise DataError('Sample name should not contain commas')
+    
+    # Check for special characters in drug units and sample name
+    res4 = data.loc[data['drug1.units'].str.contains('[^0-9a-zA-Z_]+'), :]
+    if not res4.empty:
+        raise DataError('Drug units should not contain special characters')
+
+    res5 = data.loc[data['drug2.units'].str.contains('[^0-9a-zA-Z_]+'), :]
+    if not res5.empty:
+        raise DataError('Drug units should not contain special characters')
+    
+    res6 = data.loc[data['sample'].str.contains('[^0-9a-zA-Z_]+'), :]
+    if not res6.empty:
+        raise DataError('Sample name should not contain special characters')
+    
+    # TODO: Check that drug units are the same for all conditions -- per combination uploaded
+    # a = data['drug1.units'].to_numpy() # s.values (pandas<0.24)
+    #res7 = (a[0] == a).all()
+    #if not res7: 
+    #    raise DataError('Units for drug concentration must be the same for all conditions')
+    # b = data['drug2.units'].to_numpy() # s.values (pandas<0.24)
+    #res8 = (b[0] == b).all()
+    #if not res8: 
+    #    raise DataError('Units for drug concentration must be the same for all conditions')
 
     # Drop empty rows
     nrows = data.shape[0]
