@@ -1,94 +1,208 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}About MuSyC{% endblock %}
+% block title %}
+<br>
+{% endblock %}
 {% block content %}
-<p class="lead">MuSyC is an algorithm for quantifying drug synergy along axes of potency and efficacy.</p>
-
-<h2>Overview</h2>
-    <p>MuSyC, originally published in
-        <em><a href="https://www.cell.com/cell-systems/fulltext/S2405-4712(19)30031-6" target="_blank">Meyer CT, Wooten DJ, Paudel BB, et al. Cell Systems. 2019</a></em>
-        and updated
-    in <em>Wooten DJ, Meyer CT, et al., under review, 2020</em>, is a framework for calculating drug synergy which distinguishes
-    between different types of synergistic interactions. Synergistic efficacy (beta) measures the changes in maximal
-    effect over single agents due to the combination. Synergistic potency (alpha) measures the change in potency of
-    one drug given the presence of the other drug. Importantly these types of synergy align with common clinical
-    motives for treating diseases with drug combinations: improve outcomes by escalating effect (synergistic
-    efficacy) and reduce off-target toxicity by minimizing doses (synergistic potency).</p>
-
-    <img src="{% static 'musyc-drug-synergy-graphical-abstract.svg' %}" class="img-fluid" alt="Graphical abstract of MuSyC. MuSyC is an algorithm for quantifying drug synergy along axes of potency and efficacy.">
-
-<h2>FAQ</h2>
-<h3>How do I use this site?</h3>
-<p>See the <a href="{% url 'help' %}">Help page</a>. Use is subject to <a href="{% url 'terms' %}">Terms and
-    Conditions</a>.</p>
-
-<h3>Can you quantify for 3 drug case?</h3>
-<p>Currently, the MuSyC portal can only handle the two drug case. For collaborative inquiries of this nature, please
-    email <a href="mailto:musyc@gmail.com">musyc@gmail.com</a>.</p>
-
-<h3>What is the optimal dose for synergy?</h3>
-<p>Contrary to prior frameworks, MuSyC quantifies the synergy of a drug combination. Once the best combination from
-    the screen is selected, users should look for a minimum dose that achieves the desired effect magnitude. In
-    other words, dose optimization IS ALWAYS done based on the observed effect. MuSyC helps in identifying
-    combinations for which the desired effect is achievable by the combination but not the single drugs (synergistic
-    efficacy) or where the doses required to achieve that effect are lowered due to the drugs interacting
-    (synergistic potency).</p>
-
-<h3>What if I only have 1 condition of my second drug or another binary condition (e.g. gene knockout) plus and
-    minus a dose titration experiment of the first drug?</h3>
-<p>The MuSyC fitting algorithm currently handles such cases by assuming the binary condition to satisfy
-    [drug2]->inf. In this case, the MuSyC equation reduces to a Hill equation with an EC50 defined by C1/alpha1. See
-    Section 6 of Supplement in (Wooten DJ et al. 2020) for proof of this condition.
-    {# TODO: See example dataset XXX included on the portal for an example. #}
-</p>
-
-<h3>How do I separate batches?</h3>
-<p>Use a unique identifier in the optional "batch" column of the upload. Each batch will be self-contained and not
-    sampled from for fitting dose-response surfaces from other batches.</p>
-
-<h3>What is the minimal number of samples I need/what is the optimal sampling strategy?</h3>
-<p>We have found the MuSyC framework to be fairly robust in a wide range of sample density and designs. See Figure
-    S4 in Wooten et al. 2020 for complete analysis. However, the exact sampling design requirements are
-    idiosyncratic to the noise profile of a particular assay; therefore, no universal standard exists. Typically,
-    the Matrix (also called Checkerboard) sampling strategy is most robust at the cost of higher data density
-    demands. For extremely limited sampling where the full dose-response profile of each single agent cannot be
-    captured, we recommend using Highest Single Agent (HSA) at the max concentration of both compounds as HSA
-    approximates synergistic efficacy in this condition. Subsequent screens can identify synergistically potent
-    combinations from the hits by increasing the sampling.</p>
-
-<h3>What is the fitting algorithm used?</h3>
-<p>The current fit algorithm leveraged in the MuSyC portal is described in the Methods section of Wooten et al.
-    2020. We use a Monte Carlo algorithm as suggested by
-    <a href="https://www.facm.ucl.ac.be/intranet/books/statistics/Prism-Regression-Book.unlocked.pdf" target="_blank">Motulsky and Christopoulos</a>
-    (Chapter 17, pg 104) for
-    estimating asymmetric 95% confidence intervals of each parameter. Briefly, this is done by fitting all the data
-    using standard non-linear least squares regression (TFR option in
-    <a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.curve_fit.html" target="_blank">SciPy's curve_fit</a>).
-    Based on
-    this optimal fit, noise is added to every data point proportional to the root mean square error of the optimal
-    fit. The new "noise-added" data is then fit again to generate a new parameter set. This process is run 100 times
-    and the 95% confidence intervals for all parameters are calculated from the ensemble.</p>
-
-<h3>Should I apply some data smoothing before fitting?</h3>
-<p>According to <a href="https://www.facm.ucl.ac.be/intranet/books/statistics/Prism-Regression-Book.unlocked.pdf" target="_blank">Motulsky and Christopoulos</a>,
-    data should not be smoothed before fitting because this can arbitrarily
-    reduce the noise dispersion in non-linear ways resulting in noise-profiles that are not homoskedastic, a common
-    assumption of most non-linear least-square optimizers.</p>
-
-
-<h2>Funding</h2>
-<p>CTM was supported by National Science Foundation (NSF) Graduate Student Fellowship Program (GRFP) [Award
-    #1445197]; CFL and DJW were supported by the National Science Foundation [MCB 1411482 and MCB 1715826,
-    respectively]; CFL and VQ were supported by the National Institutes of Health (NIH) [U54-CA217450 and
-    U01-CA215845]; VQ was supported by NIH [R01-186193].</p>
-
-<hr>
-<p>Please send questions, issues, and/or licensing requests to: <a href="mailto:musyc@gmail.com">musyc@gmail.com</a>.</p>
-
-{% if not request.user.is_authenticated %}
-    <a href="{{ account_signup }}" class="btn btn-primary btn-block">Create an account</a>
-{% endif %}
-<a href="{% url 'index' %}" role="button" class="btn btn-secondary btn-block">Back to home page</a>
+<div class="row">
+  <div class="col-sm-3">
+    <div class="bd-toc mt-4 mb-5 my-md-0 ps-xl-3 mb-lg-5">
+        <strong class="d-block h6 my-2 pb-2 border-bottom">Contents</strong>
+        <nav id="AboutContents"> 
+          <ul>
+            <li>
+                <a href="#overview">Overview</a>
+            </li>
+            <li>
+                <a href="#faq">FAQ</a>
+            </li>
+            <li>
+                <a href="#funding">Funding</a>
+            </li>
+          </ul>
+        </nav>
+    </div>
+  </div>
+  <div class="col-sm-9">
+    <h1>About MuSyC</h1>
+    <p class="lead">MuSyC is an algorithm for quantifying drug synergy along axes of potency and efficacy.</p>
+    <div class="card-box shadow-sm">
+      <article id="fullArticle">
+        <h2 id="overview">Overview</h2>
+        <dl>MuSyC, originally published in
+          <em><a href="https://www.cell.com/cell-systems/fulltext/S2405-4712(19)30031-6" target="_blank">Meyer CT, Wooten DJ, Paudel BB, et al. Cell Systems. 2019</a></em>
+          and updated in <em>Wooten DJ, Meyer CT, et al., under review, 2020</em>, is a framework for calculating drug synergy which distinguishes
+          between different types of synergistic interactions. Synergistic efficacy (beta) measures the changes in maximal
+          effect over single agents due to the combination. Synergistic potency (alpha) measures the change in potency of
+          one drug given the presence of the other drug. Importantly these types of synergy align with common clinical
+          motives for treating diseases with drug combinations: improve outcomes by escalating effect (synergistic
+          efficacy) and reduce off-target toxicity by minimizing doses (synergistic potency).
+        </dl>
+        <dl>
+          <img src="{% static 'musyc-drug-synergy-graphical-abstract.svg' %}" class="img-fluid" 
+            alt="Graphical abstract of MuSyC. MuSyC is an algorithm for quantifying drug synergy along axes of potency and efficacy.">
+        </dl>
+        <br>
+        <h2 id="faq">FAQ</h2>
+        <dl>
+          <div id="accordion"  class="accordian custom-accordian" role="tablist" aria-multiselectable="true">
+            <div id="q1" class="card mb-2" style="border-top-left-radius: .25rem; border-top-right-radius: .25rem;">
+              <div class="card-header" role="tab" id="headingOne">
+                <h5 class="card-title m-0">
+                  <a role="button" data-toggle="collapse" data-parent="#accordion" href="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                    How do I use this site?
+                  </a>
+                </h5>
+              </div>
+              <div id="collapseOne" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="headingOne">
+                <div class="card-body">
+                    See the <a href="{% url 'help' %}">Help page</a>. Use is subject to <a href="{% url 'terms' %}">Terms and
+                    Conditions</a>.
+                </div>
+              </div>
+            </div>
+            <div id="q2" class="card mb-2">
+              <div class="card-header" role="tab" id="headingTwo">
+                <h5 class="card-title m-0">
+                  <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                    Can you quantify for 3 drug case?
+                  </a>
+                </h5>
+              </div>
+              <div id="collapseTwo" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingTwo">
+                <div class="card-body">
+                    Currently, the MuSyC portal can only handle the two drug case. For collaborative inquiries of this nature, please
+                    email <a href="mailto:musyc@gmail.com">musyc@gmail.com</a>.
+                </div>
+              </div>
+            </div>
+            <div id="q3" class="card mb-2">
+              <div class="card-header" role="tab" id="headingThree">
+                <h5 class="card-title m-0">
+                  <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                    What is the optimal dose for synergy?
+                  </a>
+                </h5>
+              </div>
+              <div id="collapseThree" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingThree">
+                <div class="card-body">
+                    Contrary to prior frameworks, MuSyC quantifies the synergy of a drug combination. Once the best combination from
+                    the screen is selected, users should look for a minimum dose that achieves the desired effect magnitude. In
+                    other words, dose optimization IS ALWAYS done based on the observed effect. MuSyC helps in identifying
+                    combinations for which the desired effect is achievable by the combination but not the single drugs (synergistic
+                    efficacy) or where the doses required to achieve that effect are lowered due to the drugs interacting
+                    (synergistic potency).
+                </div>
+              </div>
+            </div>
+            <div id="q4" class="card mb-2">
+                <div class="card-header" role="tab" id="headingFour">
+                  <h5 class="card-title m-0">
+                    <a role="button" data-toggle="collapse" data-parent="#accordion" href="#collapseFour" aria-expanded="true" aria-controls="collapseFour">
+                        What if I only have 1 condition of my second drug or another binary condition (e.g. gene knockout) plus and
+                        minus a dose titration experiment of the first drug?
+                    </a>
+                  </h5>
+                </div>
+                <div id="collapseFour" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="headingFour">
+                  <div class="card-body">
+                    The MuSyC fitting algorithm currently handles such cases by assuming the binary condition to satisfy
+                    [drug2]->inf. In this case, the MuSyC equation reduces to a Hill equation with an EC50 defined by C1/alpha1. See
+                    Section 6 of Supplement in (Wooten DJ et al. 2020) for proof of this condition.
+                  </div>
+                </div>
+              </div>
+              <div id="q5" class="card mb-2">
+                <div class="card-header" role="tab" id="headingFive">
+                  <h5 class="card-title m-0">
+                    <a role="button" data-toggle="collapse" data-parent="#accordion" href="#collapseFive" aria-expanded="true" aria-controls="collapseFive">
+                        How do I separate batches?
+                    </a>
+                  </h5>
+                </div>
+                <div id="collapseFive" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="headingFive">
+                  <div class="card-body">
+                    Use a unique identifier in the optional "batch" column of the upload. Each batch will be self-contained and not
+                    sampled from for fitting dose-response surfaces from other batches.
+                  </div>
+                </div>
+              </div>
+              <div id="q6" class="card mb-2">
+                <div class="card-header" role="tab" id="headingSix">
+                  <h5 class="card-title m-0">
+                    <a role="button" data-toggle="collapse" data-parent="#accordion" href="#collapseSix" aria-expanded="true" aria-controls="collapseSix">
+                        What is the minimal number of samples I need/what is the optimal sampling strategy?
+                    </a>
+                  </h5>
+                </div>
+                <div id="collapseSix" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="headingSix">
+                  <div class="card-body">
+                    We have found the MuSyC framework to be fairly robust in a wide range of sample density and designs. See Figure
+                    S4 in Wooten et al. 2020 for complete analysis. However, the exact sampling design requirements are
+                    idiosyncratic to the noise profile of a particular assay; therefore, no universal standard exists. Typically,
+                    the Matrix (also called Checkerboard) sampling strategy is most robust at the cost of higher data density
+                    demands. For extremely limited sampling where the full dose-response profile of each single agent cannot be
+                    captured, we recommend using Highest Single Agent (HSA) at the max concentration of both compounds as HSA
+                    approximates synergistic efficacy in this condition. Subsequent screens can identify synergistically potent
+                    combinations from the hits by increasing the sampling.
+                  </div>
+                </div>
+              </div>
+              <div id="q7" class="card mb-2">
+                <div class="card-header" role="tab" id="headingSeven">
+                  <h5 class="card-title m-0">
+                    <a role="button" data-toggle="collapse" data-parent="#accordion" href="#collapseSeven" aria-expanded="true" aria-controls="collapseSeven">
+                        What is the fitting algorithm used?
+                    </a>
+                  </h5>
+                </div>
+                <div id="collapseSeven" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="headingSeven">
+                  <div class="card-body">
+                    The current fit algorithm leveraged in the MuSyC portal is described in the Methods section of Wooten et al.
+                    2020. We use a Monte Carlo algorithm as suggested by
+                    <a href="https://www.facm.ucl.ac.be/intranet/books/statistics/Prism-Regression-Book.unlocked.pdf" target="_blank">Motulsky and Christopoulos</a>
+                    (Chapter 17, pg 104) for
+                    estimating asymmetric 95% confidence intervals of each parameter. Briefly, this is done by fitting all the data
+                    using standard non-linear least squares regression (TFR option in
+                    <a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.curve_fit.html" target="_blank">SciPy's curve_fit</a>).
+                    Based on
+                    this optimal fit, noise is added to every data point proportional to the root mean square error of the optimal
+                    fit. The new "noise-added" data is then fit again to generate a new parameter set. This process is run 100 times
+                    and the 95% confidence intervals for all parameters are calculated from the ensemble.
+                  </div>
+                </div>
+              </div>
+              <div id="q8" class="card mb-2" style="border-bottom-left-radius: .25rem; border-bottom-right-radius: .25rem;">
+                <div class="card-header" role="tab" id="headingEight">
+                  <h5 class="card-title m-0">
+                    <a role="button" data-toggle="collapse" data-parent="#accordion" href="#collapseEight" aria-expanded="true" aria-controls="collapseEight">
+                        Should I apply some data smoothing before fitting?
+                    </a>
+                  </h5>
+                </div>
+                <div id="collapseEight" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="headingEight">
+                  <div class="card-body">
+                    According to <a href="https://www.facm.ucl.ac.be/intranet/books/statistics/Prism-Regression-Book.unlocked.pdf" target="_blank">Motulsky and Christopoulos</a>,
+                    data should not be smoothed before fitting because this can arbitrarily
+                    reduce the noise dispersion in non-linear ways resulting in noise-profiles that are not homoskedastic, a common
+                    assumption of most non-linear least-square optimizers.
+                  </div>
+                </div>
+              </div>
+          </div>
+        </dl>
+        <br>
+        <h2 id="funding">Funding</h2>
+        <dl>
+          <p>CTM was supported by National Science Foundation (NSF) Graduate Student Fellowship Program (GRFP) [Award
+            #1445197]; CFL and DJW were supported by the National Science Foundation [MCB 1411482 and MCB 1715826,
+            respectively]; CFL and VQ were supported by the National Institutes of Health (NIH) [U54-CA217450 and
+            U01-CA215845]; VQ was supported by NIH [R01-186193].</p>
+        </dl>
+      </article>
+    </div>
+  </div>
+</div>
 <br>
 {% endblock %}
