@@ -2,14 +2,19 @@
 
 {% load crispy_forms_tags %}
 
-{% block content %}
-<h2>Signup</h2>
+{% block title %}
+<br>
+<h1>Signup</h1>
 <p class="lead">Fill in the form below. Already have an account? Then please
   <a href="{{ login_url }}">log in</a>.</p>
-
-{% crispy form %}
-
 {% endblock %}
+
+{% block content %}
+<div class="card-box shadow-sm">
+  {% crispy form %}
+</div>
+{% endblock %}
+
 {% block tailscript %}
 <script>
 let params = `scrollbars=no,resizable=no,status=no,location=no,toolbar=no,menubar=no,
