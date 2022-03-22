@@ -1,25 +1,76 @@
-{% extends "../base.html" %}
-{% load crispy_forms_tags %}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'custom.css' %}">
+    <link rel="preconnect" href="https://fonts.googleapis.com"> 
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin> 
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+      html{
+        margin: 0;
+        padding: 0;
+        height: 100%;
+      }
+      body {
+        min-height: 100%;
+      }
+    </style>
+    {% block css %}{% endblock %}
+    <title>MuSyC</title>
+  </head>
+  <body class="login-bg" background="{% static 'login-bg-t7.png' %}">
+    {% load static %}
+    {% load crispy_forms_tags %}
+    
+      <div class="login-container" style="margin-top: 200px">
+        <div class="card-box shadow" style="padding-top: 2rem; padding-bottom: 2rem; padding-left: 1rem; padding-right: 1rem;">
+          <div class="row">
+            <div class="col" style="padding: 40px 6%;">
+              <div class="logo-text-container">
+                <img src="{% static 'musyc-logo.png' %}" style="width: 140px;">
+                <h1 style="font-family: 'Lato', sans-serif; font-weight:300; font-size: 5.5rem; padding-left:20px; padding-top: 15px;"><b>MuSyC</b></h1>
+              </div>
+              <div id="intro-blurb">
+                <p class="lead" style="font-family: 'Lato', sans-serif;"><strong>Mu</strong>ltidimensional <strong>Sy</strong>nergy of <strong>C</strong>ombinations</p>
+                <br>
+                <p>MuSyC is an algorithm for quantifying drug effect synergy. It distinguishes synergy of efficacy from synergy of
+                potency.</p>
+                <p>This service allows you upload your own data to produce fit parameters and examine dose-response surfaces. It is
+                    free for non-commercial use, subject to <a href="{% url 'terms' %}">terms and conditions</a>.</p>
+              </div>
+              <a href="{% url 'about' %}" role="button" class="btn btn-secondary btn-block">Learn more</a>
+            </div>
+            <div class="col" style="padding: 40px 6%;">
+              <h2 class="form-signin-heading" style="font-family: 'Lato', sans-serif; text-align: center;">Log In</h2>
+              <br>
+              {% crispy form %}
+              <a href="{% url 'account_reset_password' %}">Forgot your password?</a>
+              <hr>
+              <div class="row">
+                <div class="col align-items-center">
+                  <p>Need an account?</p>
+                </div>
+                <div class="col">
+                  <a href="{{ signup_url }}" role="button" class="btn btn-primary btn-block" style="display: inline-block"> Sign up</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
-{% block content %}
-<h1>MuSyC</h1>
-
-<div id="intro-blurb">
-<p class="lead"><strong>Mu</strong>ltidimensional <strong>Sy</strong>nergy of <strong>C</strong>ombinations</p>
-
-<p>MuSyC is an algorithm for quantifying drug effect synergy. It distinguishes synergy of efficacy from synergy of
-potency.</p>
-<p>This service allows you upload your own data to produce fit parameters and examine dose-response surfaces. It is
-    free for non-commercial use, subject to <a href="{% url 'terms' %}">terms and conditions</a>.</p>
-</div>
-
-<a href="{% url 'about' %}" role="button" class="btn btn-secondary btn-block">Learn more</a>
-<a href="{{ signup_url }}" role="button" class="btn btn-primary btn-block">Create an account</a>
-<br>
-<h2 class="form-signin-heading">Log in</h2>
-{% crispy form %}
-<a href="{% url 'account_reset_password' %}">Forgotten your
-  password?</a>
-
-
-{% endblock %}
+    <!-- Javascript -->
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+    <script src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.22/js/dataTables.bootstrap4.min.js"></script>
+  </body>
+</html>
