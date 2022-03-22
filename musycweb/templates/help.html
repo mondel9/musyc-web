@@ -1,213 +1,488 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Help{% endblock %}
-{% block content %}
-<p class="lead">This page covers usage of this web application. For general information about MuSyC
-and frequently asked questions, see the <a href="{% url 'about' %}">About page</a>.</p>
-
-<h2>Input data format</h2>
-<p>Users' data is uploaded in comma-separated value (CSV) format, using the Unicode UTF-8 encoding (the default
-    across most software). The required columns and their contents are shown in the table below. Combinations are
-    grouped based on drug1, drug2, and sample columns. Thus, multiple combinations can be uploaded in the same file
-    and will be processed separately. The drug1.units and drug2.units are arbitrary but must be consistent within
-    each combination.</p>
-
-<table class="table">
-<thead>
-    <tr>
-        <th>Column Name</th>
-        <th>Data Type</th>
-        <th>Description</th>
-    </tr>
-</thead>
-<tbody>
-<tr>
-    <td>expt.date</td>
-    <td>yyyy-mm-dd</td>
-    <td>Experiment date</td>
-</tr>
-<tr>
-    <td>drug1.conc</td>
-    <td>Float</td>
-    <td>Drug 1 concentration</td>
-</tr>
-<tr>
-    <td>drug2.conc</td>
-    <td>Float</td>
-    <td>Drug 2 concentration</td>
-</tr>
-<tr>
-    <td>effect</td>
-    <td>Float</td>
-    <td>Effect value (e.g., % viability, DIP rate)</td>
-</tr>
-<tr>
-    <td>sample</td>
-    <td>String</td>
-    <td>Sample name (e.g., name of cell line)</td>
-</tr>
-<tr>
-    <td>drug1</td>
-    <td>String</td>
-    <td>Drug 1 name</td>
-</tr>
-<tr>
-    <td>drug2</td>
-    <td>String</td>
-    <td>Drug 2 name</td>
-</tr>
-<tr>
-    <td>drug1.units</td>
-    <td>String</td>
-    <td>Drug 1 units (e.g., nM)</td>
-</tr>
-<tr>
-    <td>drug2.units</td>
-    <td>String</td>
-    <td>Drug 2 units (e.g., nM)</td>
-</tr>
-<tr>
-    <td>effect.95ci</td>
-    <td>Float (optional)</td>
-    <td>95% confidence interval for effect value</td>
-</tr>
-</tbody>
-</table>
-
-<h2>Create an account</h2>
-
-Go to {% if request.user.is_authenticated %}Create an account (note: you are already signed in){% else %}<a href="{% url 'account_signup' %}">Create an account</a>{% endif %}.
-Please enter your email address and a
-choice of password. Your email address will be verified by sending an email with a clickable link. Click on this
-link, and you will then be able to log in to the site with your credentials.
-
-<h2>Create a dataset</h2>
-
-{% if request.user.is_authenticated %}Go to <a href="{% url 'create_dataset' %}">Create dataset</a>.
-{% else %}After <a href="{% url 'account_login' %}">logging in</a>, click the Create dataset button.{% endif %}
-
-Fill out the form with each of the required fields:
-<br><br>
-
-<ul>
-    <li><strong>Name</strong>: A name to refer to the dataset</li>
-    <li><strong>File</strong>: Select a CSV file from your computer, formatted as described above</li>
-    <li><strong>Orientation</strong>: Whether Emax &gt; E0, or Emax &lt; E0:<br><br>
-        <img src="{% static 'Emax_gt_E0.png' %}" class="img-fluid" alt="Dose-response curve illustrating Emax greater than E0">
-        <img src="{% static 'Emax_lt_E0.png' %}" class="img-fluid" alt="Dose-response curve illustrating Emax less than E0"><br><br>
-        <em>Above: Dose-response curves showing Emax &gt; E0 (left) and Emax &lt; E0 (right)</em><br>
-    </li>
-    <li><strong>Metric name</strong>: The name of the drug effect (e.g., "Percent effect" or "DIP rate")</li>
-    <li><strong>Effect constraint</strong>: Whether to fix or apply bounds to the E0 and Emax values.
-        <ul>
-            <li><strong>Unconstrained</strong>: Emax and E0 are determined empirically</li>
-            <li><strong>Fixed</strong>: Emax and E0 are specified manually. This implies no synergistic efficacy, i.e. beta=0. You can specify one fixed value and leave the other one unconstrained (blank) if desired.</li>
-            <li><strong>Upper/lower bounds</strong>: Specify range bounds for Emax and E0. You can provide lower, upper, or both bounds, for either or both of Emax or E0. Leave blank for unconstrained.</li>
-        </ul>
-    </li>
-</ul>
-
-<p>After completing the form, click the "Create dataset" button on this page. The file will be uploaded
-and fitting tasks created for each drug combination. Depending on the dataset size and demand,
-this process make take a few seconds to several minutes. Do not navigate away from the page while the
-upload is in progress.</p>
-
-<h2>The Dataset Page</h2>
-
-<p>After a dataset upload is complete, you will see the dataset page. You can also return to the dataset page
-at any time by logging in and by clicking the dataset's name on the home page.</p>
-
-<p>Each combination experiment is sent to a queue for
-processing. The processing step runs the MuSyC algorithm to fit the dose-response surface, and returns the relevant
-fitting parameters. For small datasets, this process typically only takes a few minutes, but this will vary
-depending on dataset size and server demand.</p>
-
-<p>When the upload is complete, the web browser will redirect to a page showing the dataset name and a list of the
-combination experiments in a table. A progress bar indicates whether there are still fitting tasks queued, in
-progress, or completed. At the bottom of the page, there is a link to download the dataset's fitting parameters as a
-CSV file.</p>
-
-<p>Each drug combination in the table shows the fitting algorithm's status (e.g., queued, started, success, failed).
-For successful tasks, clicking on the word "SUCCESS" will show the parameters for that combination, along with an
-interactive dose-response surface plot, which can be zoomed, panned, rotated etc. in the web browser. For tasks
-marked as "FAILED", clicking on that word will show more details about the error (e.g., if there was a data
-validation issue that the user should correct). There is also a link at the bottom of the task result page to
-download that single combination's parameters as a CSV file.</p>
-
-
-<h2>Parameter CSV file</h2>
-
-The following table gives a description of each of the fields in the parameter CSV files.
-
-<table class="table">
-<thead>
-<tr><th>Parameter</th><th>Description</th></tr>
-</thead>
-<tbody>
-<tr><td>sample</td><td>Sample name</td></tr>
-<tr><td>drug1_name</td><td>Name of compound 1 (d1)</td></tr>
-<tr><td>drug2_name</td><td>Name of compound 2 (d2)</td></tr>
-<tr><td>expt</td><td>Name of experiment</td></tr>
-<tr><td>batch</td><td>Name of the batch (if applicable)</td></tr>
-<tr><td>task_status</td><td>Did the task succeed?</td></tr>
-<tr><td>converge_mc_nlls</td><td>Did the Monte Carlo sampling converge? (1=True)</td></tr>
-<tr><td>beta</td><td>The % increase of in the effect of the combination over the most efficacious single agent (based on fitted Emax).  Beta = (min(E1,E2)-E3)/(E0-min(E1,E2))</td></tr>
-<tr><td>beta_ci</td><td>The 95% confidence interval for beta based on Monte Carlo sampling</td></tr>
-<tr><td>beta_obs</td><td>The observed % increase of in the effect of the combination over the most efficacious single agent (based value of fit at max tested conc.).  Beta_obs = (min(E1_obs,E2_obs)-E3_obs)/(E0-min(E1_obs,E2_obs))</td></tr>
-<tr><td>beta_obs_ci</td><td>The 95% confidence interval for beta_obs based on Monte Carlo sampling</td></tr>
-<tr><td>log_alpha12</td><td>Log of synergistic potency (drug1’s affect on potency of drug2). Values < 0 are antagonistically potent.  Values >0 are synergistically potent.  Alpha1 is quantifies the shift in the EC50 of drug 2 at saturating conc of d1.</td></tr>
-<tr><td>log_alpha12_ci</td><td>Uncertainty in log_alpha1</td></tr>
-<tr><td>log_alpha21</td><td>Log of synergistic potency (drug2’s affect on potency of drug1). Values < 0 are antagonistically potent.  Values >0 are synergistically potent.  Alpha2 is quantifies the shift in the EC50 of drug 1 at saturating conc of d2.</td></tr>
-<tr><td>log_alpha21_ci</td><td>Uncertainty in log_alpha2</td></tr>
-<tr><td>R2</td><td>R-squared of fit</td></tr>
-<tr><td>log_like_mc_nlls</td><td>Log likelihood of the parameter set</td></tr>
-<tr><td>E0</td><td>Fitted basal effect when [d1]=[d2]=0</td></tr>
-<tr><td>E0_ci</td><td>The 95% confidence interval for E0</td></tr>
-<tr><td>E1</td><td>Fitted effect for [d1]->inf and [d2]=0</td></tr>
-<tr><td>E1_ci</td><td>The 95% confidence interval E1</td></tr>
-<tr><td>E2</td><td>Value of fit at max tested conc. d1 and [d2]=0</td></tr>
-<tr><td>E2_ci</td><td>The 95% confidence interval E1_obs</td></tr>
-<tr><td>E3</td><td>Fitted effect for [d2]->inf and [d1]=0</td></tr>
-<tr><td>E3_ci</td><td>The 95% confidence interval E2</td></tr>
-<tr><td>E1_obs</td><td>Value of fit at max tested conc. d2 and [d1]=0</td></tr>
-<tr><td>E1_obs_ci</td><td>The 95% confidence interval E2_obs</td></tr>
-<tr><td>E2_obs</td><td>Fitted effect for [d1]->inf and [d1]->inf</td></tr>
-<tr><td>E2_obs_ci</td><td>The 95% confidence interval E3</td></tr>
-<tr><td>E3_obs</td><td>Value of fit at max tested conc. d1 and d2</td></tr>
-<tr><td>E3_obs_ci</td><td>The 95% confidence interval E3_obs</td></tr>
-<tr><td>log_C1</td><td>Log of the EC50 for drug 1</td></tr>
-<tr><td>log_C1_ci</td><td>Uncertainty in log_C1</td></tr>
-<tr><td>log_C2</td><td>Log of the EC50 for drug 2</td></tr>
-<tr><td>log_C2_ci</td><td>Uncertainty in log_C2</td></tr>
-<tr><td>log_h1</td><td>Log of the hill slope d1</td></tr>
-<tr><td>log_h1_ci</td><td>95% confidence interval of log_h1</td></tr>
-<tr><td>log_h2</td><td>log of hill slope d2</td></tr>
-<tr><td>log_h2_ci</td><td>95% confidence interval of log_h2</td></tr>
-<tr><td>h1</td><td>Hill slope d1</td></tr>
-<tr><td>h2</td><td>Hill slope d2</td></tr>
-<tr><td>C1</td><td>EC50 drug1</td></tr>
-<tr><td>C2</td><td>EC50 drug2</td></tr>
-<tr><td>time_total</td><td>Time to fit</td></tr>
-<tr><td>drug1_units</td><td>Drug 1 units</td></tr>
-<tr><td>drug2_units</td><td>Drug 2 units</td></tr>
-<tr><td>metric_name</td><td>name of metric of drug effect</td></tr>
-<tr><td>fit_beta</td><td>Was Emax fixed such that beta=0? 1=Yes; 0=No</td></tr>
-<tr><td>boundary_sampling</td><td>Was boundary sampling fit used</td></tr>
-<tr><td>max_conc_d1</td><td>maximum tested concentration of drug 1</td></tr>
-<tr><td>max_conc_d2</td><td>maximum tested concentration of drug 2</td></tr>
-<tr><td>min_conc_d1</td><td>minimum tested concentration of drug 1</td></tr>
-<tr><td>min_conc_d2</td><td>minimum tested concentration of drug 2</td></tr>
-<tr><td>fit_method</td><td>What method was used to fit the 2D Hill equation</td></tr>
-<tr><td>dataset_name</td><td>Name of dataset in MuSyC portal</td></tr>
-</tbody>
-</table>
-
-<p>Please send questions, issues, and/or commercial licensing requests to: <a href="mailto:musyc@gmail.com">musyc@gmail.com</a>.</p>
-
-{% if not request.user.is_authenticated %}
-    <a href="{{ account_signup }}" class="btn btn-primary btn-block">Create an account</a>
-{% endif %}
-<a href="{% url 'index' %}" role="button" class="btn btn-secondary btn-block">Back to home page</a>
+{% block title %}
 <br>
+{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-sm-3">
+    <div class="bd-toc mt-4 mb-5 my-md-0 ps-xl-3 mb-lg-5">
+        <strong class="d-block h6 my-2 pb-2 border-bottom">Contents</strong>
+        <nav id="HelpContents">
+          <ul>
+            <li>
+                <a href="#create-account">Create Account</a>
+            </li>
+            <li>
+                <a href="#manage-account">Manage Account</a>
+            </li>
+            <ul>
+                <li>
+                    <a href="#logout">Logging Out</a>
+                </li>
+            </ul>
+            <li>
+                <a href="#projects">Projects</a>
+                <ul>
+                    <li>
+                        <a href="#create-project">Create a Project</a>
+                    </li>
+                    <li>
+                        <a href="#edit-project">Edit/Delete a Project</a>
+                    </li>
+                    <li>
+                        <a href="#share-project">Share a Project</a>
+                    </li>
+                </ul>
+            </li>
+            <li>
+                <a href="#datasets">Datasets</a>
+                <ul>
+                    <li>
+                        <a href="#view-datasets">View Datasets</a>
+                    </li>
+                    <li>
+                        <a href="#create-dataset">Create a Dataset</a>
+                    </li>
+                    <li>
+                        <a href="#dataset-layout">Dataset Page Layout</a>
+                    </li>
+                    <li>
+                        <a href="#edit-dataset">Rename/Delete a Dataset</a>
+                    </li>
+                </ul>
+            </li>
+            <li>
+                <a href="#synergy-model-fit">Synergy Model Fit</a>
+                <ul>
+                    <li>
+                        <a href="#view-synergy-params">View Synergy Fitting Results</a>
+                    </li>
+                    <li>
+                        <a href="#result-params">Parameter CSV File</a>
+                    </li>
+                    <li>
+                        <a href="#dose-res-surface">Dose-Response Surface Plot</a>
+                    </li>
+                    <li>
+                        <a href="#dose-res-curves">Dose-Response Curves</a>
+                    </li>
+                </ul>
+            </li>
+            <li>
+                <a href="#synergy-plots">Synergy Parameter Plots</a>
+                <ul>
+                    <li>
+                        <a href="#plot-types">Plot Types</a>
+                    </li>
+                    <li>
+                        <a href="#comp-datasets">Compare Datasets</a>
+                    </li>
+                </ul>
+            </li>
+            <li>
+                <a href="#contact">Contact</a>
+            </li>
+          </ul>
+        </nav>
+    </div>
+  </div>
+  <div class="col-sm-9">
+    <h1>MuSyC Help and Tutorials</h1>
+        <p class="lead">This page covers usage of this web application. For general information about MuSyC
+        and frequently asked questions, see the <a href="{% url 'about' %}">About page</a>.</p>
+
+    <div class="card-box shadow-sm">
+      <article id="fullArticle">
+        <h2 id="create-account">Create Account</h2>
+        <dl>
+            <dt> 1 </dt>
+            <dd>Go to {% if request.user.is_authenticated %}<b>Create an account</b> (note: you are already signed in){% else %}
+                <a href="{% url 'account_signup' %}">Create an account</a>{% endif %} or click <b>Sign Up</b>
+                on the login page.</dd>
+                <p><img src="{% static 'help-login-1.png' %}"></p>
+            </dd>
+            <dt> 2 </dt>
+            <dd>Enter your email address, first and last name, orginization, and create a password. Don't forget to review
+                the terms and conditions before you create your account. A verification email will be sent to the email you entered.
+                <p><img src="{% static 'help-signup.png' %}"></p>
+            </dd>
+            <dt> 3 </dt>
+            <dd>You will be redirected to the home page upon successful account creation.
+                <p><img src="{% static 'help-account-created.png' %}"></p>
+            </dd>
+        </dl>
+        <h2 id="manage-account">Manage Account</h2>
+        <p>View and manage your account email address and password by clicking the username in the navigation bar. This will open a 
+            dropdown menu. Click <b>Account</b> to view the account menu.</p>
+        <dl>
+            <dd>
+            <p>
+                <img src="{% static 'help-account-1.png' %}">
+                <img src="{% static 'help-account-2.png' %}">
+            </p>
+            </dd>
+        </dl>
+        <h4 id="logout">Logging Out</h4>
+        <p>Click the username in the navigation bar. This will open a dropdown menu. Click <b>Logout</b>. You should see a messeage 
+            confirming you have logged out successfully.</p>
+        <dl><dd><p><img src="{% static 'help-account-3.png' %}"></p></dd></dl>
+
+        <h2 id="projects">Projects</h2>
+        <p>Projects serve as an organizational structure for your data. For example, they can be used to organize data by
+            experiment. All projects you create will be on the home page under <b>'My Projects'</b>.</p>
+        <h4 id="create-project">Create a Project</h4>
+        <dl>
+            <dt> 1 </dt>
+            <dd>Click the <b>Create Project</b> button to open the new project form.
+                <p><img src="{% static 'help-new-proj-1.png' %}"></p>
+            </dd>
+            <dt> 2 </dt>
+            <dd>Enter a name and description (max length 100 characters) in the appropriate fields and click 
+                <b>Create Project</b> to submit the form. The new project will appear under 'My Projects' on the home page. All projects have a
+                <b>Date Created</b> field which is automatically set upon project creation. The <b>Datasets</b> 
+                field updates autmatically to show how many datasets are in the project.
+                <p>
+                    <img src="{% static 'help-new-proj-2.png' %}">
+                    <img src="{% static 'help-new-proj-3.png' %}">
+                </p>
+            </dd>
+        </dl>
+        <h4 id="edit-project">Edit / Delete a Project</h4>
+        <b>Edit</b>
+        <dl>
+            <dt> 1 </dt>
+            <dd>Click on the three dots in the upper right corner of the project you want to edit.
+                <p><img src="{% static 'help-edit-proj-1.png' %}"></p>
+            </dd>
+            <dt> 2 </dt>
+            <dd>To edit a project, select the <b>Edit</b> menu option to open the edit form. You can
+                edit both the name and description field by modifying the text fields. Click update to save the changes.
+                <p>
+                    <img src="{% static 'help-edit-proj-2.png' %}">
+                    <img src="{% static 'help-edit-proj-3.png' %}">
+                </p>
+            </dd>
+            <dt> 3 </dt>
+            <dd>You can see the changes in the project on the home page.
+                <p><img src="{% static 'help-edit-proj-4.png' %}"></p>
+            </dd>
+        </dl>
+        <b>Delete</b>
+        <dl>
+            <dt> 1 </dt>
+            <dd>Click on the three dots in the upper right corner of the project you want to delete. Select the <b>Delete</b> menu option. A popup will appear to 
+                confirm the deletion.
+                <p><img src="{% static 'help-delete-proj-1.png' %}"></p>
+            </dd>
+            <dt> 2 </dt>
+            <dd>Click <b>Delete Project</b> to permanently delete the project. Click <b>Close</b> if you 
+                do not wish to delete the project.
+                <p><img src="{% static 'help-delete-proj-2.png' %}"></p>
+            </dd>
+        </dl>
+        <h4 id="share-project">Share a Project</h4>
+        <p>Projects may be shared with other MuSyC users to enable collaboration and easy data-sharing.
+            The users you share your projects with will be able to view the existing datasets and add new datasets, but will not be able to delete datasets.</p>
+        <dl>
+            <dt> 1 </dt>
+            <dd>Click on the three dots in the upper right corner of the project you want to share.
+                <p><img src="{% static 'help-share-proj-1.png' %}"></p>
+            </dd>
+            <dt> 2 </dt>
+            <dd>To share the project, select the <b>Share</b> menu option to open the share project form.
+                You must enter the email associated with the MuSyC user account you want to share with.
+                <p><img src="{% static 'help-share-proj-2.png' %}"></p>
+            </dd>
+            <dt> 3 </dt>
+            <dd>All projects shared with you by other users will appear on the home page under 
+                <b>'Shared Projects'</b>. Each shared project will have an <b>Owner</b> field indicating 
+                the email of the user that created and shared the project.
+                <p><img src="{% static 'help-share-proj-3.png' %}"></p>
+            </dd>
+        </dl>
+        
+        <h2 id="datasets">Datasets</h2>
+        <h4 id="view-datasets">View Datasets</h4>
+        <p>From the home page, click on a project name to view the datasets in that project. Use the table to search and sort the datasets.</p>
+        <dl><p><img src="{% static 'help-new-data-1.png' %}"></p></dl>
+        <br>
+        <h4 id="create-dataset">Create a Dataset</h4>
+        <p>Data is uploaded in comma-separated value (CSV) format using the Unicode UTF-8 encoding (the default
+            across most software). The required columns and their contents are shown in the table below. Combinations are
+            grouped based on the <b>sample</b>, <b>drug1</b>, and <b>drug2</b> columns, meaning multiple combinations can be uploaded 
+            in the same file and will be processed separately. The <b>drug1.units</b> and <b>drug2.units</b> are arbitrary but must 
+            be consistent within each combination.</p>
+        <p>Download the following <a href="{% static 'musyc_demo_dataset.csv' %}">demo dataset</a> to view the data format and to test MuSyC functionality.</p>
+        <h5 class="header-title mt-0 mb-3">Input Data Format</h5>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Column Name</th>
+                        <th>Data Type</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td>expt.date</td>
+                    <td>yyyy-mm-dd</td>
+                    <td>Experiment date</td>
+                </tr>
+                <tr>
+                    <td>drug1.conc</td>
+                    <td>Float</td>
+                    <td>Drug 1 concentration</td>
+                </tr>
+                <tr>
+                    <td>drug2.conc</td>
+                    <td>Float</td>
+                    <td>Drug 2 concentration</td>
+                </tr>
+                <tr>
+                    <td>effect</td>
+                    <td>Float</td>
+                    <td>Effect value (e.g., % viability, DIP rate)</td>
+                </tr>
+                <tr>
+                    <td>sample</td>
+                    <td>String</td>
+                    <td>Sample name (e.g., name of cell line)</td>
+                </tr>
+                <tr>
+                    <td>drug1</td>
+                    <td>String</td>
+                    <td>Drug 1 name</td>
+                </tr>
+                <tr>
+                    <td>drug2</td>
+                    <td>String</td>
+                    <td>Drug 2 name</td>
+                </tr>
+                <tr>
+                    <td>drug1.units</td>
+                    <td>String</td>
+                    <td>Drug 1 units (e.g., nM)</td>
+                </tr>
+                <tr>
+                    <td>drug2.units</td>
+                    <td>String</td>
+                    <td>Drug 2 units (e.g., nM)</td>
+                </tr>
+                <tr>
+                    <td>effect.95ci</td>
+                    <td>Float (optional)</td>
+                    <td>95% confidence interval for effect value</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <br>
+        <b>Upload Data</b>
+        <dl>
+            <dt> 1 </dt>
+            <dd>From within the project you want to add data to, click the <b>Create Dataset</b> button to open the new dataset form.
+                <p><img src="{% static 'help-new-data-2.png' %}"></p>
+            </dd>
+            <dt> 2 </dt>
+            <dd>Fill out the form with each of the following fields:
+                <ul>
+                    <li><strong>Name</strong>: A name to refer to the dataset</li>
+                    <li><strong>File</strong>: Select a CSV file from your computer, formatted as described above</li>
+                    <li><strong>Orientation</strong>: Whether Emax &gt; E0, or Emax &lt; E0:<br>
+                        <img id="emax-img" src="{% static 'Emax_gt_lt_E0.png' %}" class="img-fluid"
+                            alt="Dose-response curve illustrating Emax greater than and less than E0">
+                        <em>Above: Dose-response curves showing Emax &gt; E0 (left) and Emax &lt; E0 (right)</em><br>
+                    </li>
+                    <li><strong>Metric name</strong>: The name of the drug effect (e.g., "Percent effect" or "DIP rate").</li>
+                    <li><strong>Effect constraint</strong>: Whether to fix or apply bounds to the E0 and Emax values.
+                        <ul>
+                            <li><strong>Unconstrained</strong>: Emax and E0 are determined empirically</li>
+                            <li><strong>Fixed</strong>: Emax and E0 are specified manually. This implies no synergistic efficacy, i.e. beta=0. You can specify one fixed value and leave the other one unconstrained (blank) if desired.</li>
+                            <li><strong>Upper/lower bounds</strong>: Specify range bounds for Emax and E0. You can provide lower, upper, or both bounds, for either or both of Emax or E0. Leave blank for unconstrained.</li>
+                        </ul>
+                    </li>
+                </ul>
+                <p><img src="{% static 'help-new-data-3.png' %}"></p>
+            </dd>
+            <dt> 3 </dt>
+            <dd>After submitting the form, the file should start uploading and the browser will be redirected to the processing page. 
+                MuSyC loads the file into its database, calculates the synergy of the drug combinations, and fits a 
+                dose-response surface and dose-response curves. This may take several minutes.
+                <div class="alert alert-warning" role="alert">
+                    Note: Do not navigate away from the page while the upload is in progress.
+                </div>
+                <p><img src="{% static 'help-new-data-4.png' %}"></p>
+            </dd>
+            <dt> 4 </dt>
+            <dd>View the progress of the synergy calculations and model fitting using the progress bar at the top of the dataset page. The status of each combination
+                can be seen in the <b>Synergy Model Fit</b> column as <b>QUEUED</b>, <b>STARTED</b>, <b>FIT COMPLETE</b>, or <b>FAILED</b>. At the top of the page, 
+                there is a <b>Download Results (CSV)</b> button to download the dataset's fitting parameters as a
+                CSV file (see <a href="#synergy-plots">Synergy Parameter Plots</a> for more details).
+            </dd>
+        </dl>
+        <h4 id="dataset-layout">Dataset Page Layout</h4>
+            <dd>
+                <p><img src="{% static 'help-index-layout-2.png' %}"></p>
+            </dd>
+            <p> You can return to the combination fits page at any time by clicking the links in the <b>Dataset Combinations</b> column in the dataset table.</p>
+        <h4 id="edit-dataset">Rename / Delete a Dataset</h4>
+        <b>Edit</b>
+            <dl>
+                <dt> 1 </dt>
+                <dd>Click on the <b>Rename Dataset</b> button to open the rename dataset form. Enter a new name and click
+                     <b>Rename</b> to submit.
+                    <p>
+                        <img src="{% static 'help-rename-data-1.png' %}">
+                        <img src="{% static 'help-rename-data-2.png' %}">
+                    </p>
+                </dd>
+            </dl>
+        <b>Delete</b>
+            <dl>
+                <dt> 1 </dt>
+                <dd>Click on the <b>Delete Dataset</b> button. A popup will appear to confirm the deletion.
+                    Click <b>Delete Dataset</b> to permanently delete the dataset. Click <b>Close</b> if you 
+                    do not wish to delete the dataset.
+                    <p>
+                        <img src="{% static 'help-delete-data-1.png' %}">
+                        <img src="{% static 'help-delete-data-2.png' %}">
+                    </p>
+                </dd>
+            </dl>
+        
+        <h2 id="synergy-model-fit">Synergy Model Fit</h2>
+        <h4 id="view-synergy-params">View Synergy Fitting Results</h4>
+        <p>Each drug combination dataset task table shows the fitting algorithm's status (e.g., queued, started, fit complete, failed) 
+            under the 'Synergy Model Fit' column. For successful tasks, clicking on the <b>FIT COMPLETE</b> will show the parameters 
+            for that combination, along with an interactive dose-response surface plot and dose-response curve plots. These plots can be zoomed, 
+            panned, and rotated in the web browser. For tasks marked as <b>FAILED</b>, clicking on that word will show more details about the error 
+            (e.g., if there was a data validation issue that the user should correct).</p>
+        <dl>
+            <p><img src="{% static 'help-synergy-1.png' %}"></p>
+            <p>At the top of the page, there is a <b>Download Results (CSV)</b> 
+            button to download the combination's fitting parameters as a CSV file. The table at the top of the page displays a subset of these parameters.</p>
+            <p><img src="{% static 'help-synergy-2.png' %}"></p>
+        </dl>
+        <h4 id="result-params">Parameter CSV File</h4>
+        <p class="text-muted">
+            The following table gives a description of each of the fields in the output parameter CSV files.
+        </p>
+        <h5 class="header-title mt-0 mb-3">Output Data Format</h5>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr><th>Parameter</th><th>Description</th></tr>
+                    </thead>
+                    <tbody>
+                    <tr><td>sample</td><td>Sample name</td></tr>
+                    <tr><td>drug1_name</td><td>Name of compound 1 (d1)</td></tr>
+                    <tr><td>drug2_name</td><td>Name of compound 2 (d2)</td></tr>
+                    <tr><td>expt</td><td>Name of experiment</td></tr>
+                    <tr><td>batch</td><td>Name of the batch (if applicable)</td></tr>
+                    <tr><td>task_status</td><td>Did the task succeed?</td></tr>
+                    <tr><td>converge_mc_nlls</td><td>Did the Monte Carlo sampling converge? (1=True)</td></tr>
+                    <tr><td>beta</td><td>The % increase of in the effect of the combination over the most efficacious single agent (based on fitted Emax).  Beta = (min(E1,E2)-E3)/(E0-min(E1,E2))</td></tr>
+                    <tr><td>beta_ci</td><td>The 95% confidence interval for beta based on Monte Carlo sampling</td></tr>
+                    <tr><td>beta_obs</td><td>The observed % increase of in the effect of the combination over the most efficacious single agent (based value of fit at max tested conc.).  Beta_obs = (min(E1_obs,E2_obs)-E3_obs)/(E0-min(E1_obs,E2_obs))</td></tr>
+                    <tr><td>beta_obs_ci</td><td>The 95% confidence interval for beta_obs based on Monte Carlo sampling</td></tr>
+                    <tr><td>log_alpha12</td><td>Log of synergistic potency (drug1’s affect on potency of drug2). Values < 0 are antagonistically potent.  Values >0 are synergistically potent.  Alpha1 is quantifies the shift in the EC50 of drug 2 at saturating conc of d1.</td></tr>
+                    <tr><td>log_alpha12_ci</td><td>Uncertainty in log_alpha1</td></tr>
+                    <tr><td>log_alpha21</td><td>Log of synergistic potency (drug2’s affect on potency of drug1). Values < 0 are antagonistically potent.  Values >0 are synergistically potent.  Alpha2 is quantifies the shift in the EC50 of drug 1 at saturating conc of d2.</td></tr>
+                    <tr><td>log_alpha21_ci</td><td>Uncertainty in log_alpha2</td></tr>
+                    <tr><td>R2</td><td>R-squared of fit</td></tr>
+                    <tr><td>log_like_mc_nlls</td><td>Log likelihood of the parameter set</td></tr>
+                    <tr><td>E0</td><td>Fitted basal effect when [d1]=[d2]=0</td></tr>
+                    <tr><td>E0_ci</td><td>The 95% confidence interval for E0</td></tr>
+                    <tr><td>E1</td><td>Fitted effect for [d1]->inf and [d2]=0</td></tr>
+                    <tr><td>E1_ci</td><td>The 95% confidence interval E1</td></tr>
+                    <tr><td>E2</td><td>Value of fit at max tested conc. d1 and [d2]=0</td></tr>
+                    <tr><td>E2_ci</td><td>The 95% confidence interval E1_obs</td></tr>
+                    <tr><td>E3</td><td>Fitted effect for [d2]->inf and [d1]=0</td></tr>
+                    <tr><td>E3_ci</td><td>The 95% confidence interval E2</td></tr>
+                    <tr><td>E1_obs</td><td>Value of fit at max tested conc. d2 and [d1]=0</td></tr>
+                    <tr><td>E1_obs_ci</td><td>The 95% confidence interval E2_obs</td></tr>
+                    <tr><td>E2_obs</td><td>Fitted effect for [d1]->inf and [d1]->inf</td></tr>
+                    <tr><td>E2_obs_ci</td><td>The 95% confidence interval E3</td></tr>
+                    <tr><td>E3_obs</td><td>Value of fit at max tested conc. d1 and d2</td></tr>
+                    <tr><td>E3_obs_ci</td><td>The 95% confidence interval E3_obs</td></tr>
+                    <tr><td>log_C1</td><td>Log of the EC50 for drug 1</td></tr>
+                    <tr><td>log_C1_ci</td><td>Uncertainty in log_C1</td></tr>
+                    <tr><td>log_C2</td><td>Log of the EC50 for drug 2</td></tr>
+                    <tr><td>log_C2_ci</td><td>Uncertainty in log_C2</td></tr>
+                    <tr><td>log_h1</td><td>Log of the hill slope d1</td></tr>
+                    <tr><td>log_h1_ci</td><td>95% confidence interval of log_h1</td></tr>
+                    <tr><td>log_h2</td><td>Log of hill slope d2</td></tr>
+                    <tr><td>log_h2_ci</td><td>95% confidence interval of log_h2</td></tr>
+                    <tr><td>h1</td><td>Hill slope d1</td></tr>
+                    <tr><td>h2</td><td>Hill slope d2</td></tr>
+                    <tr><td>C1</td><td>EC50 drug1</td></tr>
+                    <tr><td>C2</td><td>EC50 drug2</td></tr>
+                    <tr><td>time_total</td><td>Time to fit</td></tr>
+                    <tr><td>drug1_units</td><td>Drug 1 units</td></tr>
+                    <tr><td>drug2_units</td><td>Drug 2 units</td></tr>
+                    <tr><td>metric_name</td><td>Name of metric of drug effect</td></tr>
+                    <tr><td>fit_beta</td><td>Was Emax fixed such that beta=0? 1=Yes; 0=No</td></tr>
+                    <tr><td>boundary_sampling</td><td>Was boundary sampling fit used</td></tr>
+                    <tr><td>max_conc_d1</td><td>Maximum tested concentration of drug 1</td></tr>
+                    <tr><td>max_conc_d2</td><td>Maximum tested concentration of drug 2</td></tr>
+                    <tr><td>min_conc_d1</td><td>Minimum tested concentration of drug 1</td></tr>
+                    <tr><td>min_conc_d2</td><td>Minimum tested concentration of drug 2</td></tr>
+                    <tr><td>fit_method</td><td>What method was used to fit the 2D Hill equation</td></tr>
+                    <tr><td>dataset_name</td><td>Name of dataset in MuSyC portal</td></tr>
+                    </tbody>
+            </table>
+        </div>
+        <h4 id="dose-res-surface">Dose-Response Surface Plot</h4>
+        <p>Below the fitting parameter table is the dose-reponse surface generated by the MuSyC algorithm. All plots on the MuSyC site are generated
+            using <a href="https://plotly.com">Plotly</a>, so they are interactive with the ability to zoom, pan, tilt, and hover over data points 
+            to view detailed information. All plots can be downloaded as HTML files by clicking the <b>Download HTML</b> button.</p>
+        
+        <dl><p><img src="{% static 'help-surface-1.png' %}"></p></dl>
+
+        <h4 id="dose-res-curves">Dose-Response Curves</h2>
+        <p>At the bottom of the <b>Synergy Model Fit</b> page are the dose-response curves for each drug in the combination.</p>
+        <dl><p><img src="{% static 'help-curves-1.png' %}"></p></dl>
+        <br> 
+        <h2 id="synergy-plots">Synergy Parameter Plots</h2>
+        <p>A comparison of the model fitting parameters for every drug and drug combination can be accessed by clicking <b>View Comparison</b>
+         under the <b>Combination Comparison</b> column in the dataset table.</p>
+        <dl>
+            <p><img src="{% static 'help-synergy-plot-1.png' %}"></p>
+            <p><img style="height: 600px;" src="{% static 'help-synergy-plot-2.png' %}"></p>
+            <p>For each plot, you can hover over each data point to see more detailed parameter information. You can also click on individual data points to open 
+                the corresponding dose response surface plot in a new window.</p>
+        </dl>
+        <h4 id="plot-types">Plot Types</h4>
+        <ul>
+            <li><strong>Drug Combination Bar Plot:</strong> Plots the drug combination parameters for each task in the dataset as a bar plot in descending order</li>
+            <li><strong>Single Drug Bar Plot:</strong> Plots the single drug parameters for each task in the dataset as a bar plot in descending order</li>
+            <li><strong>Drug Combination Scatter Plot:</strong> Plots two drug combination paramters. The parameter on each axis can be selected 
+                using the dropdown menu on the plot. The newly selected values will load automatically.</li>
+            <li><strong>Single Drug Scatter Plot:</strong> Plots two single drug paramters. The parameter on each axis can be selected 
+                using the dropdown menu on the plot. The newly selected values will load automatically.</li>
+        </ul>
+        <h4 id="comp-datasets">Compare Datasets</h4>
+        <dl>
+            <dt> 1 </dt>
+            <dd>Click on the <b>Load Datasets</b> dropdown button to open a list of all datasets you own.
+                <p><img src="{% static 'help-synergy-plot-3.png' %}"></p>
+            </dd>
+            <dt> 2 </dt>
+            <dd>Use the checkboxes to select the datasets you want to load into the parameter plots. Make sure to click <b>Submit</b> after your selections are made.
+                <p><img src="{% static 'help-synergy-plot-4.png' %}"></p>
+            </dd>
+            <dt> 3 </dt>
+            <dd>The updated plots will begin to load one by one. Each plotted dataset can be diffrentiated by color (the hover text also contains the dataset name).</dd>
+                <p><img style="height: 600px;" src="{% static 'help-synergy-plot-5.png' %}"></p>
+            
+        </dl>
+        <h2 id="contact">Contact</h2>
+        <p>Please send questions, issues, and/or commercial licensing requests to: <a href="mailto:musyc@gmail.com">musyc@gmail.com</a>.</p>
+      </article>
+    </div>
+  </div>
+</div>
 {% endblock %}
