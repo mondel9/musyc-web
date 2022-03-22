@@ -11,6 +11,22 @@ import numpy as np
 import swot
 
 
+# Does not seem to be working
+class CreateProjectForm(forms.Form):
+    name = forms.CharField()
+    description = forms.CharField(max_length=100)
+
+    def __init__(self, *args, **kwargs):
+        super(CreateProjectForm, self).__init__(*args, **kwargs)
+
+        self.helper = FormHelper()
+        self.helper.form_class = 'form-vertical'
+        self.helper.form_id = 'create-project-form'
+        self.helper.add_input(Submit('submit', 'Create Project',
+                                     css_class='btn-block'))
+
+
+
 class CreateDatasetForm(forms.Form):
     REQUIRED_FIELDS = {
         'expt.date': str,
