@@ -22,7 +22,7 @@ width=600,height=300,left=100,top=100`;
 
 $('#terms-link').click(function(e){
     e.preventDefault();
-    open('{% url 'terms' %}?popup', 'Terms and Conditions', params);
+    open("{% url 'terms' %}?popup", 'Terms and Conditions', params);
 });
 </script>
 {% endblock %}
