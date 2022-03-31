@@ -21,7 +21,7 @@ def parse_ci(df_ci, lower, upper):
 
 # This would need to be changed to the musyc base url 
 def create_link(task_id):
-     link = 'http://127.0.0.1/task/' + task_id
+     link = 'https://musyc.lolab.xyz/task/' + task_id
      return link
 
 def check_batch(row, drug):
