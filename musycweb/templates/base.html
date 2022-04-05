@@ -33,6 +33,9 @@
           <li class="nav-item{% url 'projects' as curpage %}{% if request.path == curpage %} active{% endif %}">
             <a class="nav-link" href="{% url 'projects' %}">Projects</a>
           </li>
+          <li class="nav-item{% url 'all_datasets' as curpage %}{% if request.path == curpage %} active{% endif %}">
+            <a class="nav-link" href="{% url 'all_datasets' %}">Datasets</a>
+          </li>
           {% endif %}
           <li class="nav-item{% url 'about' as curpage %}{% if request.path == curpage %} active{% endif %}">
             <a class="nav-link" href="{% url 'about' %}">About</a>
