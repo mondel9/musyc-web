@@ -1,0 +1,305 @@
+{% extends "base.html" %}
+
+{% block title %}
+<br>
+<p style="font-size: 1.2rem;">
+    <a href="{% url 'index' d.project_id %}">
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-return-left" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path fill-rule="evenodd" d="M14.5 1.5a.5.5 0 0 1 .5.5v4.8a2.5 2.5 0 0 1-2.5 2.5H2.707l3.347 3.346a.5.5 0 0 1-.708.708l-4.2-4.2a.5.5 0 0 1 0-.708l4-4a.5.5 0 1 1 .708.708L2.707 8.3H12.5A1.5 1.5 0 0 0 14 6.8V2a.5.5 0 0 1 .5-.5z"/>
+        </svg>
+        Datasets
+    </a>
+</p>
+{% endblock %}
+{% block content %}
+{% csrf_token %}
+<div class="custom-container" style="height: 100%; min-width: 98vw">
+<div class="row">
+    <div class="col-md-7">
+        <h3>Dataset: {{ d.name }}</h3>
+    </div>
+    <div class="col-md-3">
+        <a role="button" class="btn btn-primary btn-block" href="{% url 'ajax_dataset_csv' d.id %}">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="17" fill="currentColor" class="bi bi-file-earmark-arrow-down" viewBox="0 0 16 16">
+                <path d="M8.5 6.5a.5.5 0 0 0-1 0v3.793L6.354 9.146a.5.5 0 1 0-.708.708l2 2a.5.5 0 0 0 .708 0l2-2a.5.5 0 0 0-.708-.708L8.5 10.293V6.5z"/>
+                <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/>
+            </svg>
+             Download Results (CSV)
+        </a>
+    </div>
+    <div class="col-md-2 text-center">
+        <div class="dropdown">
+            <button class="btn btn-primary btn-block dropdown-toggle" type="button" id="datasetDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                Load Datasets
+            </button>
+            <div class="dropdown-menu">
+                <form id="datasetCheckForm" class="px-4 py-3">
+                    {% csrf_token %}
+                    {% for dataset in datasets %}
+                    <div id="datasetCheck" class="form-group form-check">
+                        {% if d.name == dataset.name %}
+                            <label class="form-check-label" for="{{dataset.name}}">
+                            <input class="form-check-input" type="checkbox" name="{{dataset.name}}" autocomplete="off" 
+                                    value="{{dataset.id}}" id="{{dataset.name}}" checked="checked"> {{dataset.name}}
+                            </label>
+                        {% else %}
+                            <label class="form-check-label" for="{{dataset.name}}">
+                                <input class="form-check-input" type="checkbox" name="{{dataset.name}}" autocomplete="off" 
+                                    value="{{dataset.id}}" id="{{dataset.name}}"> {{dataset.name}}
+                            </label>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                    <button id="checkSubmit" name="submit" type="submit" class="btn btn-primary">Submit</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+<br>
+<div class="custom-container" style="height: 100%; min-width: 98vw">
+    <div class="row">
+        <div class="col" style="padding: 10px;">
+            <div id="plots" class="card shadow-sm" style="border: 1.5px solid #e3e3e3; padding-bottom: 1rem;">
+                <h5 class="card-header">
+                    <div class="row">
+                        <div class="col align-self-center">
+                            Drug Combination Parameter Bar Plot
+                        </div>
+                        <div class="col-sm-4">
+                            <button id="download-data1" type="button" class="btn btn-outline-dark" style="float: right;">Download HTML</button>
+                        </div>
+                    </div>
+                </h5>
+                <script src="https://cdn.plot.ly/plotly-1.52.2.min.js"></script>
+                <div id="plotly-outer1" style="height:620px;" class="d-flex justify-content-center">
+                    <div class="spinner-border" role="status" style="margin:auto">
+                    <span class="sr-only">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col" style="padding: 10px;">
+            <div id="plots" class="card shadow-sm" style="border: 1.5px solid #e3e3e3; padding-bottom: 1rem;">
+                <h5 class="card-header">
+                    <div class="row">
+                        <div class="col align-self-center">
+                            Single Drug Parameter Bar Plot
+                        </div>
+                        <div class="col-sm-4">
+                            <button id="download-data2" type="button" class="btn btn-outline-dark" style="float: right;">Download HTML</button>
+                        </div>
+                    </div>
+                </h5>
+                <script src="https://cdn.plot.ly/plotly-1.52.2.min.js"></script>
+                <div id="plotly-outer2" style="height:620px;" class="d-flex justify-content-center">
+                    <div class="spinner-border" role="status" style="margin:auto">
+                    <span class="sr-only">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="custom-container" style="height: 100%; min-width: 98vw">
+    <div class="row">
+        <div class="col" style="padding: 10px;">
+            <div id="plots" class="card shadow-sm" style="border: 1.5px solid #e3e3e3; padding-bottom: 1rem;">
+                <h5 class="card-header">
+                    <div class="row">
+                        <div class="col-7 align-self-center">
+                            Drug Combination Parameter Scatter Plot
+                        </div>
+                        <div class="col-5">
+                            <button id="download-data3" type="button" class="btn btn-outline-dark" style="float: right;">Download HTML</button>
+                        </div>
+                    </div>
+                </h5>
+                <script src="https://cdn.plot.ly/plotly-1.52.2.min.js"></script>
+                <div id="plotly-outer3" style="height:600px;" class="d-flex justify-content-center">
+                    <div class="spinner-border" role="status" style="margin:auto">
+                    <span class="sr-only">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col" style="padding: 10px;">
+            <div id="plots" class="card shadow-sm" style="border: 1.5px solid #e3e3e3; padding-bottom: 1rem;">
+                <h5 class="card-header">
+                    <div class="row">
+                        <div class="col align-self-center">
+                            Single Drug Parameter Scatter Plot
+                        </div>
+                        <div class="col">
+                            <button id="download-data4" type="button" class="btn btn-outline-dark" style="float: right;">Download HTML</button>
+                        </div>
+                    </div>
+                </h5>
+                <script src="https://cdn.plot.ly/plotly-1.52.2.min.js"></script>
+                <div id="plotly-outer4" style="height:600px;" class="d-flex justify-content-center">
+                    <div class="spinner-border" role="status" style="margin:auto">
+                    <span class="sr-only">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}
+
+{% block tailscript %}
+<script src="https://cdn.plot.ly/plotly-1.52.2.min.js"></script>
+<script>
+$( "div.row-full").parent().css( "margin", "0");
+
+// Show initial plots
+$.ajax({
+        url: "{% url 'ajax_comboBar_plot' d.id %}",
+        data: null,
+        success:function(data){ 
+            $('#plotly-outer1').html(data);
+        },
+        error: function() {
+            $('#plotly-outer1').html('<div style="margin:auto"><strong>Error</strong></div>');
+         },
+        dataType: 'html'
+});
+// the single drug bar plot
+$.ajax({
+        url: "{% url 'ajax_singleBar_plot' d.id %}",
+        data: null,
+        success:function(data){ 
+            $('#plotly-outer2').html(data);
+        },
+        error: function() {
+            $('#plotly-outer2').html('<div style="margin:auto"><strong>Error</strong></div>');
+         },
+        dataType: 'html'
+});
+// drug combo scatter plot
+$.ajax({
+    url: "{% url 'ajax_comboScatter_plot' d.id %}",
+    data: null,
+    success:function(data){ 
+        $('#plotly-outer3').html(data);
+    },
+    error: function() {
+        $('#plotly-outer3').html('<div style="margin:auto"><strong>Error</strong></div>');
+    },
+    dataType: 'html'
+});
+// the single scatter plot
+$.ajax({
+    url: "{% url 'ajax_singleScatter_plot' d.id %}",
+    data: null,
+    success:function(data){ 
+        $('#plotly-outer4').html(data);
+    },
+    error: function() {
+        $('#plotly-outer4').html('<div style="margin:auto"><strong>Error</strong></div>');
+    },
+    dataType: 'html'
+});
+
+// Update the plots with checked datasets
+$('#datasetCheckForm').submit(function(event){
+    event.preventDefault();
+    var formData = $('form').serialize();
+    // The drug combo bar plot
+    $.ajax({
+            url: "{% url 'ajax_comboBar_plot' d.id %}",
+            type: "POST",
+            data: formData,
+            success:function(data){ 
+                $('#plotly-outer1').html(data);
+            },
+            error: function() {
+                $('#plotly-outer1').html('<div style="margin:auto"><strong>Error</strong></div>');
+            },
+            dataType: 'html'
+    });
+    // the single drug bar plot
+    $.ajax({
+        url: "{% url 'ajax_singleBar_plot' d.id %}",
+        type: "POST",
+        data: formData,
+        success:function(data){ 
+            $('#plotly-outer2').html(data);
+        },
+        error: function() {
+            $('#plotly-outer2').html('<div style="margin:auto"><strong>Error</strong></div>');
+         },
+        dataType: 'html'    
+    });
+    // drug combo scatter plot
+    $.ajax({
+        url: "{% url 'ajax_comboScatter_plot' d.id %}",
+        type: "POST",
+        data: formData,
+        success:function(data){ 
+            $('#plotly-outer3').html(data);
+        },
+        error: function() {
+            $('#plotly-outer3').html('<div style="margin:auto"><strong>Error</strong></div>');
+        },
+        dataType: 'html'
+    });
+    // the single scatter plot
+    $.ajax({
+        url: "{% url 'ajax_singleScatter_plot' d.id %}",
+        type: "POST",
+        data: formData,
+        success:function(data){ 
+            $('#plotly-outer4').html(data);
+        },
+        error: function() {
+            $('#plotly-outer4').html('<div style="margin:auto"><strong>Error</strong></div>');
+        },
+        dataType: 'html'
+    });
+});
+
+// Download HTML
+// No idea why this is the only plot that doesn't immediately download... just opens in current window
+$("#download-data1").click(function(e) {
+    e.preventDefault();
+    var formData = $( "form" ).serialize();
+    // add plot type - hard coded for now; will pass with button
+    plotData = formData.concat('&plotType=comboBar&download=1');
+    url = "{% url 'ajax_get_plot' d.id %}" + "?" + plotData;
+    // open in a new tab for now
+    window.open(url, "_blank").focus();
+    // None of these worked
+    //window.open("{% url 'ajax_get_plot' d.id %}" + "?" + plotData, '_self');
+    //window.location = "{% url 'ajax_get_plot' d.id %}" + "?" + plotData;
+    //window.location.assign("{% url 'ajax_get_plot' d.id %}" + "?" + plotData).focus();
+});
+
+$("#download-data2").click(function(e) {
+    e.preventDefault();
+    var formData = $( "form" ).serialize();
+    // add plot type - hard coded for now; will pass with button
+    // Remove the extra csrf token **
+    plotData = formData.concat('&plotType=singleBar&download=1');
+    window.location = "{% url 'ajax_get_plot' d.id %}" + "?" + plotData;
+});
+
+$("#download-data3").click(function(e) {
+    e.preventDefault();
+    var formData = $( "form" ).serialize();
+    // add plot type - hard coded for now; will pass with button
+    plotData = formData.concat('&plotType=comboScatter&download=1');
+    window.location = "{% url 'ajax_get_plot' d.id %}" + "?" + plotData;
+});
+
+$("#download-data4").click(function(e) {
+    e.preventDefault();
+    var formData = $( "form" ).serialize();
+    // add plot type - hard coded for now; will pass with button
+    plotData = formData.concat('&plotType=singleScatter&download=1');
+    window.location = "{% url 'ajax_get_plot' d.id %}" + "?" + plotData;
+});
+</script>
+{% endblock %}

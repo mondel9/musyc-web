@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+    {% crispy form %}
+{% endblock %}
+
+{% block tailscript %}
+<script>
+var project_form = $('#create-project-form')
+ $.ajax({
+    url: "{% url 'create_project' %}",
+    type: "POST",
+    data: $(project_form).serialize(),
+    success: function(data) {
+        if (!(data['success'])) {
+            $(project_form).replaceWith(data['form_html']);
+        }
+        else {
+            // success message
+            alert("successfully created project.")
+        }
+    },
+    error: function() {
+        alert("Failed to create project.")
+    }
+ });
+</script>
+{% endblock %}
