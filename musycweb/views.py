@@ -76,6 +76,16 @@ def index(request, project_id):
 
     return render(request, 'index.html', {'datasets': datasets, 'p': p, 'shared_ds': shared_ds})
 
+# Show all datasets owned by user
+@login_required
+def all_datasets(request):
+    datasets = Dataset.objects.filter(
+        owner=request.user,
+        deleted_date=None
+    ).order_by('-creation_date')
+    
+    return render(request, 'dataset_index.html', {'datasets': datasets})
+
 # New home page 
 @login_required
 def projects(request):
