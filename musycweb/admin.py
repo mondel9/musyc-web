@@ -12,7 +12,7 @@ class ProjectAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'description', 'owner', 'num_datasets')
 
 class DatasetAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'creation_date', 'owner', 'project_id)
+    list_display = ('id', 'name', 'creation_date', 'owner', 'project_id')
 
 
 class DatasetTaskAdmin(admin.ModelAdmin):
