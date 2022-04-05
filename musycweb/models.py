@@ -14,7 +14,7 @@ class Profile(models.Model):
     organization = models.TextField(default=None, null=True)
     accept_eula = models.BooleanField(default=False)
 
- class Project(models.Model):
+class Project(models.Model):
     id = models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')
     owner = models.ForeignKey(settings.AUTH_USER_MODEL,
                               on_delete=models.CASCADE)
@@ -23,7 +23,7 @@ class Profile(models.Model):
     deleted_date = models.DateTimeField(null=True, default=None, editable=False)
     description = models.TextField()
     num_datasets =  models.IntegerField()
-    shared_with = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="shared")    
+    shared_with = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="shared")
     
     def __str__(self):
         return f'[{self.id}] {self.name} <{self.owner.email}> [{self.shared_with}]'
