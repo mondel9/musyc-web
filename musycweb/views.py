@@ -4,8 +4,8 @@ from django.http import HttpResponse, HttpResponseRedirect, Http404,\
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from matplotlib.pyplot import scatter
-from .forms import CreateDatasetForm, CreateProjectForm
-from .models import Dataset, DatasetTask, Project
+from .forms import CreateDatasetForm #, CreateProjectForm
+from .models import Dataset, DatasetTask #, Project
 from .tasks import process_dataset, DataError
 from django.contrib import messages
 from django_celery_results.models import TaskResult
@@ -53,30 +53,30 @@ def terms(request):
 def account(request):
     return render(request, 'account/account.html')
 
-@login_required
-def index(request, project_id):
-    p = Project.objects.get(id=project_id, deleted_date=None)
-    # Make sure user can see projects shared with them 
-    shared_ps = Project.objects.filter(shared_with__email=request.user.email, id=project_id)
-    datasets = None
-    shared_ds = None
-    # Show datasets for owned project 
-    if request.user == p.owner:
-        datasets = Dataset.objects.filter(
-            owner=request.user,
-            project_id=project_id,
-            deleted_date=None
-        ).order_by('-creation_date')
-    # Show datasets for shared projects
-    elif shared_ps is not None:
-        shared_ds = Dataset.objects.filter(
-            project_id=project_id,
-            deleted_date=None
-        ).order_by('-creation_date')
+# @login_required
+# def index(request, project_id):
+#     p = Project.objects.get(id=project_id, deleted_date=None)
+#     # Make sure user can see projects shared with them 
+#     shared_ps = Project.objects.filter(shared_with__email=request.user.email, id=project_id)
+#     datasets = None
+#     shared_ds = None
+#     # Show datasets for owned project 
+#     if request.user == p.owner:
+#         datasets = Dataset.objects.filter(
+#             owner=request.user,
+#             project_id=project_id,
+#             deleted_date=None
+#         ).order_by('-creation_date')
+#     # Show datasets for shared projects
+#     elif shared_ps is not None:
+#         shared_ds = Dataset.objects.filter(
+#             project_id=project_id,
+#             deleted_date=None
+#         ).order_by('-creation_date')
 
-    return render(request, 'index.html', {'datasets': datasets, 'p': p, 'shared_ds': shared_ds})
+#     return render(request, 'index.html', {'datasets': datasets, 'p': p, 'shared_ds': shared_ds})
 
-# Show all datasets owned by user
+# New homw page; Show all datasets owned by user
 @login_required
 def all_datasets(request):
     datasets = Dataset.objects.filter(
@@ -86,162 +86,6 @@ def all_datasets(request):
     
     return render(request, 'dataset_index.html', {'datasets': datasets})
 
-# New home page 
-@login_required
-def projects(request):
-    # Get all projects the user owns
-    ps = Project.objects.filter(
-        owner=request.user,
-        deleted_date=None
-    ).order_by('-creation_date')
-
-    # Get all projects shared with user
-    shared_ps = Project.objects.filter(shared_with__email=request.user.email, deleted_date=None)
-    
-    for p in ps:
-        p.num_datasets = get_num_datasets(p.id) 
-        p.save()
-    
-    for sp in shared_ps:
-        sp.num_datasets = get_num_datasets(sp.id)
-        sp.save()
-
-    return render(request, 'projects.html', {'ps': ps, 'shared_ps': shared_ps})
-
-# TODO: do i need to initialize the shared_with field? should be empty when new project
-@login_required
-def create_project(request):
-    if request.method == 'POST':
-        project_form = CreateProjectForm(request.POST)
-        if project_form.is_valid():
-            cd = project_form.cleaned_data
-            p = Project(
-                owner = request.user,             
-                name = cd['name'],
-                description = cd['description'],
-                num_datasets = 0
-            )
-            p.save()
-            return HttpResponseRedirect("/")
-    else:
-        project_form = CreateProjectForm()
-    
-    context = {}
-    context.update(csrf(request))
-    
-    return render(request, 'create_projects.html', context)
-
-# TODO: Share with more than one user at a time
-@login_required
-def share_project(request):
-    try:
-        p = Project.objects.get(id=request.POST['project_id'], deleted_date=None)
-    except Project.DoesNotExist:
-        raise Http404()
-
-    if p.owner_id != request.user.id:
-        raise Http404()
-    
-    '''
-    for email in request.POST['email']:
-        # get Profile object of user emails to share
-        try:
-            u = get_user_model().objects.get(email=email)
-        except:
-            raise Http404()
-        # update model
-        p.shared_with.add(u)
-    '''
-    try:
-        u = get_user_model().objects.get(email=request.POST['email'])
-    except:
-        raise Http404()
-    # update model
-    p.shared_with.add(u)
-    p.save()
-    
-    # return JsonResponse({'status': 'success'})
-    shared_ps = Project.objects.filter(shared_with__email=request.user.email, deleted_date=None)
-    # get all projects the user owns
-    ps = Project.objects.filter(
-        owner=request.user,
-        deleted_date=None
-    ).order_by('-creation_date')
-    
-    messages.success(request, f'Project "{p.name}" was shared')
-    return HttpResponseRedirect("/")
-
-@login_required
-def delete_project(request, project_id):
-    if request.method != 'DELETE':
-        return HttpResponseBadRequest()
-    p = Project.objects.filter(id=project_id, deleted_date=None)
-    if not request.user.is_staff:
-        p = p.filter(owner_id=request.user.id)
-    try:
-        p = p.get()
-    except Project.DoesNotExist:
-        raise Http404()
-
-    p.deleted_date = timezone.now()
-    p.save()
-
-    shared_ps = Project.objects.filter(shared_with__email=request.user.email, deleted_date=None)
-    # Get all projects the user owns
-    ps = Project.objects.filter(
-        owner=request.user,
-        deleted_date=None
-    ).order_by('-creation_date')
-
-    messages.success(request, f'Project "{p.name}" was deleted')
-    return JsonResponse({'status': 'success', 'project_id': project_id})
-
-@login_required
-def edit_project(request):
-    if request.method != 'POST':
-        return HttpResponseBadRequest()
-    p = Project.objects.filter(id=request.POST['project_id'], deleted_date=None)
-    if not request.user.is_staff:
-        p = p.filter(owner_id=request.user.id)
-    try:
-        p = p.get()
-    except Project.DoesNotExist:
-        raise Http404()
-
-    # Can update one or both fileds; check if either is empty; if yes do nothing
-    if 'name' in request.POST:
-        if request.POST['name'] != '':
-            p.name = request.POST['name']
-            p.save()
-    
-    if 'description' in request.POST:
-        if request.POST['description'] != '':
-            p.description = request.POST['description']
-            p.save()
-    
-    shared_ps = Project.objects.filter(shared_with__email=request.user.email, deleted_date=None)
-    # Get all projects the user owns
-    ps = Project.objects.filter(
-        owner=request.user,
-        deleted_date=None
-    ).order_by('-creation_date')
-
-    messages.success(request, f'Project "{p.name}" was updated')
-    return HttpResponseRedirect("/")
-
-# TODO: Still not working, not sure how to access list of all emails/user ids
-def get_shared_emails(project_id):
-    # the shared project
-    p = Project.objects.get(id=project_id, deleted_date=None)
-    # Get the user's email stored in shared_with
-    emails = p.shared_with.email
-    return emails
-
-def get_num_datasets(project_id):
-    p = Project.objects.get(id=project_id, deleted_date=None)
-    datasets = Dataset.objects.filter(project_id=project_id, deleted_date=None)
-    num_datasets = len(datasets)
-    return num_datasets
 
 @login_required
 def analysis(request, dataset_id): 
@@ -250,20 +94,15 @@ def analysis(request, dataset_id):
     except Dataset.DoesNotExist:
         raise Http404()
     
-    shared_ps = Project.objects.filter(shared_with__email=request.user.email, id=d.project_id)
-    if shared_ps is not None:
-        shared = True
-    elif d.owner_id != request.user.id and not request.user.is_staff:
+      if d.owner_id != request.user.id and not request.user.is_staff:
         raise Http404()
-     
-    # 5/26: removed owner so shared project users can still load the datasets
+        
     datasets = Dataset.objects.filter(
-        # owner=request.user,
-        project=d.project,
+        owner=request.user,
         deleted_date=None
     ).order_by('-creation_date')
 
-    return render(request, 'analysis.html', {'d': d, 'datasets':datasets})
+    return render(request, 'analysis.html', {'d': d, 'datasets': datasets})
 
 def _create_dataset_response(request, form):
     if 'ajax' in request.GET:
@@ -273,21 +112,17 @@ def _create_dataset_response(request, form):
         })
     else:
         return render(request, 'create_dataset.html', {
-            'form': form, 'p': project
+            'form': form
         })
 
 
 @login_required
-def create_dataset(request, project_id):
-    p = Project.objects.get(id=project_id, deleted_date=None)
+def create_dataset(request):
     if request.method == 'POST':
         form = CreateDatasetForm(request.POST, request.FILES)
         if form.is_valid():
-            # for shared_with user to view datasets
-            if p.owner != request.user:
-                d = Dataset(
-                owner=p.owner,
-                project_id=project_id,
+            d = Dataset(
+                owner=request.user,
                 name=form.cleaned_data['name'],
                 file=form.cleaned_data['file'],
                 orientation=form.cleaned_data['orientation'],
@@ -296,20 +131,7 @@ def create_dataset(request, project_id):
                 e0_upper=form.cleaned_data['e0_upper_bound'],
                 emax_lower=form.cleaned_data['emax_lower_bound'],
                 emax_upper=form.cleaned_data['emax_upper_bound']
-                )
-            else:
-                d = Dataset(
-                    owner=request.user,
-                    project_id=project_id,
-                    name=form.cleaned_data['name'],
-                    file=form.cleaned_data['file'],
-                    orientation=form.cleaned_data['orientation'],
-                    metric_name=form.cleaned_data['metric_name'],
-                    e0_lower=form.cleaned_data['e0_lower_bound'],
-                    e0_upper=form.cleaned_data['e0_upper_bound'],
-                    emax_lower=form.cleaned_data['emax_lower_bound'],
-                    emax_upper=form.cleaned_data['emax_upper_bound']
-                )
+            )
             d.save()
 
             # Fire off the fitting tasks
@@ -330,7 +152,7 @@ def create_dataset(request, project_id):
     else:
         form = CreateDatasetForm()
 
-    return _create_dataset_response(request, form, p)
+    return _create_dataset_response(request, form)
 
 
 @login_required
@@ -340,17 +162,10 @@ def view_dataset(request, dataset_id):
     except Dataset.DoesNotExist:
         raise Http404()
 
-    # Allow for shared project datasets to be viewed
-    shared_ps = Project.objects.filter(shared_with__email=request.user.email, id=d.project_id)
-    if shared_ps is not None:
-        shared = True
-    elif d.owner_id != request.user.id and not request.user.is_staff:
+    if d.owner_id != request.user.id and not request.user.is_staff:
         raise Http404()
-
-    p = Project.objects.get(id=d.project_id, deleted_date=None)
-    current_user = request.user.email
     
-    return render(request, 'dataset.html', {'d': d, 'p': p, 'current_user': current_user})
+    return render(request, 'dataset.html', {'d': d})
 
 
 @login_required
@@ -401,11 +216,7 @@ def ajax_tasks(request, dataset_id):
     except Dataset.DoesNotExist:
         raise Http404()
 
-    # Letting shared data be downloaded
-    shared_ps = Project.objects.filter(shared_with__email=request.user.email, id=d.project_id)
-    if shared_ps is not None:
-        shared = True
-    elif d.owner_id != request.user.id and not request.user.is_staff:
+    if d.owner_id != request.user.id and not request.user.is_staff:
         raise Http404()
 
     tasks = DatasetTask.objects.filter(dataset=d).prefetch_related(
@@ -427,11 +238,7 @@ def ajax_dataset_csv(request, dataset_id):
     if not tasks:
         return HttpResponse(f'Dataset {dataset_id} has no tasks or not found')
 
-    # Letting shared data be downloaded
-    shared_ps = Project.objects.filter(shared_with__email=request.user.email, id=tasks[0].dataset.project_id)
-    if shared_ps is not None:
-        shared = True
-    elif tasks[0].dataset.owner_id != request.user.id and \
+    if tasks[0].dataset.owner_id != request.user.id and \
             not request.user.is_staff:
         return HttpResponse(f'Dataset {dataset_id} not found', status=404)
 
@@ -458,11 +265,7 @@ def view_task(request, task_id):
     except DatasetTask.DoesNotExist:
         raise Http404()
 
-    # Letting shared data be downloaded
-    shared_ps = Project.objects.filter(shared_with__email=request.user.email, id=task.dataset.project_id)
-    if shared_ps is not None:
-        shared = True
-    elif task.dataset.owner_id != request.user.id and not request.user.is_staff:
+    if task.dataset.owner_id != request.user.id and not request.user.is_staff:
         raise Http404()
 
     return render(request, 'task_result.html', {'task': task})
@@ -479,11 +282,7 @@ def ajax_task_csv(request, task_id):
     except DatasetTask.DoesNotExist:
         return HttpResponse(f'Task {task_id} not found', status=404)
 
-    # Letting shared data be downloaded
-    shared_ps = Project.objects.filter(shared_with__email=request.user.email, id=task.dataset.project_id)
-    if shared_ps is not None:
-        shared = True
-    elif task.dataset.owner_id != request.user.id and not request.user.is_staff:
+    if task.dataset.owner_id != request.user.id and not request.user.is_staff:
         return HttpResponse(f'Task {task_id} not found', status=404)
 
     if not task.task:
@@ -513,11 +312,7 @@ def ajax_surface_plot(request, task_id):
     except DatasetTask.DoesNotExist:
         raise Http404()
 
-    # Letting shared data be downloaded
-    shared_ps = Project.objects.filter(shared_with__email=request.user.email, id=task.dataset.project_id)
-    if shared_ps is not None:
-        shared = True
-    elif task.dataset.owner_id != request.user.id and not request.user.is_staff:
+    if task.dataset.owner_id != request.user.id and not request.user.is_staff:
         raise Http404()
 
     # Get any plot
@@ -558,11 +353,7 @@ def ajax_task_status(request, dataset_id):
         dataset__deleted_date=None
     ).prefetch_related('task')
     
-    # Letting shared data be downloaded
-    shared_ps = Project.objects.filter(shared_with__email=request.user.email, id=tasks[0].dataset.project_id)
-    if shared_ps is not None:
-        shared = True
-    elif not request.user.is_staff:
+    if not request.user.is_staff:
         tasks = tasks.filter(dataset__owner_id=request.user.id)
         
     return JsonResponse({task.task_id: task.status for task in tasks})
@@ -601,7 +392,8 @@ def ajax_get_plot(request, dataset_id):
     
     if as_attachment:
         try:
-            title = plot_fig['layout']['title']['text']
+            # title = plot_fig['layout']['title']['text']
+            title = 'plot_' + request.GET['plotType']
         except KeyError:
             title = 'Plot'
         response['Content-Disposition'] = \
@@ -636,8 +428,9 @@ def ajax_get_plot2(request, task_id):
     
     if as_attachment:
         try:
-            # TODO: Change title to drug1 name and drug2 name for the curve plots
-            title = plot_fig['layout']['title']['text']
+            # TODO: Change title to drug1 name and drug2 name _ dataset for the curve plots
+            # title = plot_fig['layout']['title']['text']
+            title = 'plot_' + request.GET['plotType']
         except KeyError:
             title = 'Plot'
         response['Content-Disposition'] = \
@@ -655,11 +448,7 @@ def ajax_curve_plot(request, task_id):
     except DatasetTask.DoesNotExist:
         raise Http404()
 
-    # Letting shared data be downloaded
-    shared_ps = Project.objects.filter(shared_with__email=request.user.email, id=task.dataset.project_id)
-    if shared_ps is not None:
-        shared = True
-    elif task.dataset.owner_id != request.user.id and not request.user.is_staff:
+    if task.dataset.owner_id != request.user.id and not request.user.is_staff:
         raise Http404()
 
     # Get any plot
@@ -702,11 +491,7 @@ def ajax_curve2_plot(request, task_id):
     except DatasetTask.DoesNotExist:
         raise Http404()
 
-    # Letting shared data be downloaded
-    shared_ps = Project.objects.filter(shared_with__email=request.user.email, id=task.dataset.project_id)
-    if shared_ps is not None:
-        shared = True
-    elif task.dataset.owner_id != request.user.id and not request.user.is_staff:
+    if task.dataset.owner_id != request.user.id and not request.user.is_staff:
         raise Http404()
 
     # Get any plot
@@ -758,11 +543,7 @@ def ajax_comboBar_plot(request, dataset_id):
             if not tasks:
                 return HttpResponse(f'Dataset {x} has no tasks or not found')
 
-            # Letting shared data be downloaded
-            shared_ps = Project.objects.filter(shared_with__email=request.user.email, id=tasks[0].dataset.project_id)
-            if shared_ps is not None:
-                shared = True
-            elif tasks[0].dataset.owner_id != request.user.id and \
+            if tasks[0].dataset.owner_id != request.user.id and \
                     not request.user.is_staff:
                 return HttpResponse(f'Dataset {x} not found', status=404)
             
@@ -795,11 +576,7 @@ def ajax_comboBar_plot(request, dataset_id):
             if not tasks:
                 return HttpResponse(f'Dataset {x} has no tasks or not found')
 
-            # Letting shared data be downloaded
-            shared_ps = Project.objects.filter(shared_with__email=request.user.email, id=tasks[0].dataset.project_id)
-            if shared_ps is not None:
-                shared = True
-            elif tasks[0].dataset.owner_id != request.user.id and \
+            if tasks[0].dataset.owner_id != request.user.id and \
                     not request.user.is_staff:
                 return HttpResponse(f'Dataset {x} not found', status=404)
             
@@ -823,11 +600,7 @@ def ajax_comboBar_plot(request, dataset_id):
         if not tasks:
             return HttpResponse(f'Dataset {dataset_id} has no tasks or not found')
 
-        # Letting shared data be downloaded
-        shared_ps = Project.objects.filter(shared_with__email=request.user.email, id=tasks[0].dataset.project_id)
-        if shared_ps is not None:
-            shared = True
-        elif tasks[0].dataset.owner_id != request.user.id and \
+        if tasks[0].dataset.owner_id != request.user.id and \
                 not request.user.is_staff:
             return HttpResponse(f'Dataset {dataset_id} not found', status=404)
         
@@ -872,11 +645,7 @@ def ajax_singleBar_plot(request, dataset_id):
             if not tasks:
                 return HttpResponse(f'Dataset {x} has no tasks or not found')
 
-            # Letting shared data be downloaded
-            shared_ps = Project.objects.filter(shared_with__email=request.user.email, id=tasks[0].dataset.project_id)
-            if shared_ps is not None:
-                shared = True
-            elif tasks[0].dataset.owner_id != request.user.id and \
+            if tasks[0].dataset.owner_id != request.user.id and \
                     not request.user.is_staff:
                 return HttpResponse(f'Dataset {x} not found', status=404)
             
@@ -911,11 +680,7 @@ def ajax_singleBar_plot(request, dataset_id):
             if not tasks:
                 return HttpResponse(f'Dataset {x} has no tasks or not found')
 
-            # Letting shared data be downloaded
-            shared_ps = Project.objects.filter(shared_with__email=request.user.email, id=tasks[0].dataset.project_id)
-            if shared_ps is not None:
-                shared = True
-            elif tasks[0].dataset.owner_id != request.user.id and \
+            if tasks[0].dataset.owner_id != request.user.id and \
                     not request.user.is_staff:
                 return HttpResponse(f'Dataset {x} not found', status=404)
             
@@ -940,11 +705,7 @@ def ajax_singleBar_plot(request, dataset_id):
         if not tasks:
             return HttpResponse(f'Dataset {dataset_id} has no tasks or not found')
 
-        # Letting shared data be downloaded
-        shared_ps = Project.objects.filter(shared_with__email=request.user.email, id=tasks[0].dataset.project_id)
-        if shared_ps is not None:
-            shared = True
-        elif tasks[0].dataset.owner_id != request.user.id and \
+        if tasks[0].dataset.owner_id != request.user.id and \
                 not request.user.is_staff:
             return HttpResponse(f'Dataset {dataset_id} not found', status=404)
 
@@ -989,11 +750,7 @@ def ajax_comboScatter_plot(request, dataset_id):
             if not tasks:
                 return HttpResponse(f'Dataset {x} has no tasks or not found')
             
-            # Letting shared data be downloaded
-            shared_ps = Project.objects.filter(shared_with__email=request.user.email, id=tasks[0].dataset.project_id)
-            if shared_ps is not None:
-                shared = True
-            elif tasks[0].dataset.owner_id != request.user.id and \
+            if tasks[0].dataset.owner_id != request.user.id and \
                     not request.user.is_staff:
                 return HttpResponse(f'Dataset {x} not found', status=404)
             
@@ -1027,11 +784,7 @@ def ajax_comboScatter_plot(request, dataset_id):
             if not tasks:
                 return HttpResponse(f'Dataset {x} has no tasks or not found')
 
-            # Letting shared data be downloaded
-            shared_ps = Project.objects.filter(shared_with__email=request.user.email, id=tasks[0].dataset.project_id)
-            if shared_ps is not None:
-                shared = True
-            elif tasks[0].dataset.owner_id != request.user.id and \
+            if tasks[0].dataset.owner_id != request.user.id and \
                     not request.user.is_staff:
                 return HttpResponse(f'Dataset {x} not found', status=404)
             
@@ -1056,11 +809,7 @@ def ajax_comboScatter_plot(request, dataset_id):
         if not tasks:
             return HttpResponse(f'Dataset {dataset_id} has no tasks or not found')
 
-        # Letting shared data be downloaded
-        shared_ps = Project.objects.filter(shared_with__email=request.user.email, id=tasks[0].dataset.project_id)
-        if shared_ps is not None:
-            shared = True
-        elif tasks[0].dataset.owner_id != request.user.id and \
+        if tasks[0].dataset.owner_id != request.user.id and \
                 not request.user.is_staff:
             return HttpResponse(f'Dataset {dataset_id} not found', status=404)
         
@@ -1104,11 +853,7 @@ def ajax_singleScatter_plot(request, dataset_id):
             if not tasks:
                 return HttpResponse(f'Dataset {x} has no tasks or not found')
 
-            # Letting shared data be downloaded
-            shared_ps = Project.objects.filter(shared_with__email=request.user.email, id=tasks[0].dataset.project_id)
-            if shared_ps is not None:
-                shared = True
-            elif tasks[0].dataset.owner_id != request.user.id and \
+            if tasks[0].dataset.owner_id != request.user.id and \
                     not request.user.is_staff:
                 return HttpResponse(f'Dataset {x} not found', status=404)
             
@@ -1142,11 +887,7 @@ def ajax_singleScatter_plot(request, dataset_id):
             if not tasks:
                 return HttpResponse(f'Dataset {x} has no tasks or not found')
 
-            # Letting shared data be downloaded
-            shared_ps = Project.objects.filter(shared_with__email=request.user.email, id=tasks[0].dataset.project_id)
-            if shared_ps is not None:
-                shared = True
-            elif tasks[0].dataset.owner_id != request.user.id and \
+            if tasks[0].dataset.owner_id != request.user.id and \
                     not request.user.is_staff:
                 return HttpResponse(f'Dataset {x} not found', status=404)
             
@@ -1171,11 +912,7 @@ def ajax_singleScatter_plot(request, dataset_id):
         if not tasks:
             return HttpResponse(f'Dataset {dataset_id} has no tasks or not found')
 
-        # Letting shared data be downloaded
-        shared_ps = Project.objects.filter(shared_with__email=request.user.email, id=tasks[0].dataset.project_id)
-        if shared_ps is not None:
-            shared = True
-        elif tasks[0].dataset.owner_id != request.user.id and \
+        if tasks[0].dataset.owner_id != request.user.id and \
                 not request.user.is_staff:
             return HttpResponse(f'Dataset {dataset_id} not found', status=404)
 
