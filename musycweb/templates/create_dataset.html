@@ -37,7 +37,7 @@ window.onbeforeunload = function() {
 $modal.on('shown.bs.modal', function() {
     uploadInProgress = true;
     $.ajax({
-        url: "{% url 'create_dataset' p.id %}?ajax",
+        url: "{% url 'create_dataset' %}?ajax",
         type: "POST",
         data: new FormData($dsetForm.get(0)),
         processData: false,

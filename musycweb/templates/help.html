@@ -23,20 +23,6 @@
                 </li>
             </ul>
             <li>
-                <a href="#projects">Projects</a>
-                <ul>
-                    <li>
-                        <a href="#create-project">Create a Project</a>
-                    </li>
-                    <li>
-                        <a href="#edit-project">Edit/Delete a Project</a>
-                    </li>
-                    <li>
-                        <a href="#share-project">Share a Project</a>
-                    </li>
-                </ul>
-            </li>
-            <li>
                 <a href="#datasets">Datasets</a>
                 <ul>
                     <li>
@@ -129,83 +115,9 @@
             confirming you have logged out successfully.</p>
         <dl><dd><p><img src="{% static 'help-account-3.png' %}"></p></dd></dl>
 
-        <h2 id="projects">Projects</h2>
-        <p>Projects serve as an organizational structure for your data. For example, they can be used to organize data by
-            experiment. All projects you create will be on the home page under <b>'My Projects'</b>.</p>
-        <h4 id="create-project">Create a Project</h4>
-        <dl>
-            <dt> 1 </dt>
-            <dd>Click the <b>Create Project</b> button to open the new project form.
-                <p><img src="{% static 'help-new-proj-1.png' %}"></p>
-            </dd>
-            <dt> 2 </dt>
-            <dd>Enter a name and description (max length 100 characters) in the appropriate fields and click 
-                <b>Create Project</b> to submit the form. The new project will appear under 'My Projects' on the home page. All projects have a
-                <b>Date Created</b> field which is automatically set upon project creation. The <b>Datasets</b> 
-                field updates autmatically to show how many datasets are in the project.
-                <p>
-                    <img src="{% static 'help-new-proj-2.png' %}">
-                    <img src="{% static 'help-new-proj-3.png' %}">
-                </p>
-            </dd>
-        </dl>
-        <h4 id="edit-project">Edit / Delete a Project</h4>
-        <b>Edit</b>
-        <dl>
-            <dt> 1 </dt>
-            <dd>Click on the three dots in the upper right corner of the project you want to edit.
-                <p><img src="{% static 'help-edit-proj-1.png' %}"></p>
-            </dd>
-            <dt> 2 </dt>
-            <dd>To edit a project, select the <b>Edit</b> menu option to open the edit form. You can
-                edit both the name and description field by modifying the text fields. Click update to save the changes.
-                <p>
-                    <img src="{% static 'help-edit-proj-2.png' %}">
-                    <img src="{% static 'help-edit-proj-3.png' %}">
-                </p>
-            </dd>
-            <dt> 3 </dt>
-            <dd>You can see the changes in the project on the home page.
-                <p><img src="{% static 'help-edit-proj-4.png' %}"></p>
-            </dd>
-        </dl>
-        <b>Delete</b>
-        <dl>
-            <dt> 1 </dt>
-            <dd>Click on the three dots in the upper right corner of the project you want to delete. Select the <b>Delete</b> menu option. A popup will appear to 
-                confirm the deletion.
-                <p><img src="{% static 'help-delete-proj-1.png' %}"></p>
-            </dd>
-            <dt> 2 </dt>
-            <dd>Click <b>Delete Project</b> to permanently delete the project. Click <b>Close</b> if you 
-                do not wish to delete the project.
-                <p><img src="{% static 'help-delete-proj-2.png' %}"></p>
-            </dd>
-        </dl>
-        <h4 id="share-project">Share a Project</h4>
-        <p>Projects may be shared with other MuSyC users to enable collaboration and easy data-sharing.
-            The users you share your projects with will be able to view the existing datasets and add new datasets, but will not be able to delete datasets.</p>
-        <dl>
-            <dt> 1 </dt>
-            <dd>Click on the three dots in the upper right corner of the project you want to share.
-                <p><img src="{% static 'help-share-proj-1.png' %}"></p>
-            </dd>
-            <dt> 2 </dt>
-            <dd>To share the project, select the <b>Share</b> menu option to open the share project form.
-                You must enter the email associated with the MuSyC user account you want to share with.
-                <p><img src="{% static 'help-share-proj-2.png' %}"></p>
-            </dd>
-            <dt> 3 </dt>
-            <dd>All projects shared with you by other users will appear on the home page under 
-                <b>'Shared Projects'</b>. Each shared project will have an <b>Owner</b> field indicating 
-                the email of the user that created and shared the project.
-                <p><img src="{% static 'help-share-proj-3.png' %}"></p>
-            </dd>
-        </dl>
-        
         <h2 id="datasets">Datasets</h2>
         <h4 id="view-datasets">View Datasets</h4>
-        <p>From the home page, click on a project name to view the datasets in that project. Use the table to search and sort the datasets.</p>
+        <p>All datasets will be on the home page, or <b>Datasets<b> tab. Use the table to search and sort the datasets.</p>
         <dl><p><img src="{% static 'help-new-data-1.png' %}"></p></dl>
         <br>
         <h4 id="create-dataset">Create a Dataset</h4>
@@ -283,7 +195,7 @@
         <b>Upload Data</b>
         <dl>
             <dt> 1 </dt>
-            <dd>From within the project you want to add data to, click the <b>Create Dataset</b> button to open the new dataset form.
+            <dd>Click the <b>Create Dataset</b> button to open the new dataset form.
                 <p><img src="{% static 'help-new-data-2.png' %}"></p>
             </dd>
             <dt> 2 </dt>
@@ -467,7 +379,7 @@
         <h4 id="comp-datasets">Compare Datasets</h4>
         <dl>
             <dt> 1 </dt>
-            <dd>Click on the <b>Load Datasets</b> dropdown button to open a list of all datasets you own.
+            <dd>Click on the <b>Load Datasets</b> dropdown button to open a list of all datasets you have created.
                 <p><img src="{% static 'help-synergy-plot-3.png' %}"></p>
             </dd>
             <dt> 2 </dt>
