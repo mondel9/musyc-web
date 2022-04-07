@@ -94,7 +94,7 @@ def analysis(request, dataset_id):
     except Dataset.DoesNotExist:
         raise Http404()
     
-      if d.owner_id != request.user.id and not request.user.is_staff:
+    if d.owner_id != request.user.id and not request.user.is_staff:
         raise Http404()
         
     datasets = Dataset.objects.filter(
