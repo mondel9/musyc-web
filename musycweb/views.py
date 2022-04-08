@@ -4,8 +4,8 @@ from django.http import HttpResponse, HttpResponseRedirect, Http404,\
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from matplotlib.pyplot import scatter
-from .forms import CreateDatasetForm #, CreateProjectForm
-from .models import Dataset, DatasetTask #, Project
+from .forms import CreateDatasetForm
+from .models import Dataset, DatasetTask
 from .tasks import process_dataset, DataError
 from django.contrib import messages
 from django_celery_results.models import TaskResult
@@ -21,17 +21,12 @@ from django.utils.html import escape
 from django.utils.html import strip_tags
 import re
 import json
-# For shared projects
-from django.contrib.auth import get_user_model
 # New plots
 from .drugComboBar import combo_bar
 from .singleDrugBar import single_bar
 from .drugComboScatter import combo_scatter
 from .singleDrugScatter import single_scatter
 from .doseResponseCurves import doseResponse_Curve
-import math
-import csv
-import io
 
 
 def about(request):
@@ -49,42 +44,20 @@ def terms(request):
         {}
     )
 
+
 @login_required
-def account(request):
-    return render(request, 'account/account.html')
-
-# @login_required
-# def index(request, project_id):
-#     p = Project.objects.get(id=project_id, deleted_date=None)
-#     # Make sure user can see projects shared with them 
-#     shared_ps = Project.objects.filter(shared_with__email=request.user.email, id=project_id)
-#     datasets = None
-#     shared_ds = None
-#     # Show datasets for owned project 
-#     if request.user == p.owner:
-#         datasets = Dataset.objects.filter(
-#             owner=request.user,
-#             project_id=project_id,
-#             deleted_date=None
-#         ).order_by('-creation_date')
-#     # Show datasets for shared projects
-#     elif shared_ps is not None:
-#         shared_ds = Dataset.objects.filter(
-#             project_id=project_id,
-#             deleted_date=None
-#         ).order_by('-creation_date')
-
-#     return render(request, 'index.html', {'datasets': datasets, 'p': p, 'shared_ds': shared_ds})
-
-# New homw page; Show all datasets owned by user
-@login_required
-def all_datasets(request):
+def index(request):
     datasets = Dataset.objects.filter(
         owner=request.user,
         deleted_date=None
     ).order_by('-creation_date')
-    
-    return render(request, 'dataset_index.html', {'datasets': datasets})
+
+    return render(request, 'index.html', {'datasets': datasets})
+
+
+@login_required
+def account(request):
+    return render(request, 'account/account.html')
 
 
 @login_required
@@ -103,6 +76,7 @@ def analysis(request, dataset_id):
     ).order_by('-creation_date')
 
     return render(request, 'analysis.html', {'d': d, 'datasets': datasets})
+
 
 def _create_dataset_response(request, form):
     if 'ajax' in request.GET:
@@ -140,7 +114,7 @@ def create_dataset(request):
             except DataError as e:
                 form.add_error('file', e)
                 d.delete()
-                return _create_dataset_response(request, form, p)
+                return _create_dataset_response(request, form)
 
             # Success
             if 'ajax' in request.GET:
@@ -358,6 +332,7 @@ def ajax_task_status(request, dataset_id):
         
     return JsonResponse({task.task_id: task.status for task in tasks})
 
+
 # New plotting code
 @login_required
 def ajax_get_plot(request, dataset_id):
@@ -400,6 +375,7 @@ def ajax_get_plot(request, dataset_id):
             'attachment; filename="{}.{}"'.format(strip_tags(title), file_type)
     return response
 
+
 @login_required
 def ajax_get_plot2(request, task_id):
     file_type = 'html'
@@ -436,6 +412,7 @@ def ajax_get_plot2(request, task_id):
         response['Content-Disposition'] = \
             'attachment; filename="{}.{}"'.format(strip_tags(title), file_type)
     return response
+
 
 @login_required
 def ajax_curve_plot(request, task_id):
@@ -479,7 +456,8 @@ def ajax_curve_plot(request, task_id):
         return curve1
     else: 
         return HttpResponse(plot1_html)
-    
+
+
 @login_required
 def ajax_curve2_plot(request, task_id):
     try:
@@ -522,7 +500,8 @@ def ajax_curve2_plot(request, task_id):
             return curve2
         else:
             return HttpResponse(plot2_html)
-        
+
+
 @login_required
 def ajax_comboBar_plot(request, dataset_id):
     # To show the added datasets
@@ -624,6 +603,7 @@ def ajax_comboBar_plot(request, dataset_id):
         bar_final_plot = get_plot_html(barPlot)
         return HttpResponse(bar_final_plot)
     
+
 @login_required
 def ajax_singleBar_plot(request, dataset_id):
     if request.method == 'POST':
@@ -731,6 +711,7 @@ def ajax_singleBar_plot(request, dataset_id):
     bar_final_plot = get_plot_html(barPlot)
     return HttpResponse(bar_final_plot)
 
+
 @login_required
 def ajax_comboScatter_plot(request, dataset_id):
     if request.method == 'POST':
@@ -832,6 +813,7 @@ def ajax_comboScatter_plot(request, dataset_id):
         scatterPlot = combo_scatter(results, task_list)
         comboScatter_final_plot = get_plot_html(scatterPlot)
         return HttpResponse(comboScatter_final_plot)
+
 
 @login_required
 def ajax_singleScatter_plot(request, dataset_id):
@@ -937,10 +919,12 @@ def ajax_singleScatter_plot(request, dataset_id):
         singleScatter_final_plot = get_plot_html(scatterPlot)
         return HttpResponse(singleScatter_final_plot)
 
+
 def get_plot_html(plot_figure):
     plot_html = plotly.offline.plot(plot_figure, output_type='div', include_plotlyjs=False)
     final_plot = add_plotly_links(plot_html)
     return final_plot
+
 
 def add_plotly_links(plot_div):
     # Get id of html div element that looks like
