@@ -11,9 +11,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin> 
     <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
     {% load static %}   
-    {% block css %}
     <link rel="stylesheet" href="{% static 'custom.css' %}">
-    {% endblock %}
+    {% block css %}{% endblock %}
     <title>MuSyC</title>
   </head>
   <body>
@@ -27,9 +26,12 @@
             MuSyC
         </a>
         <ul class="navbar-nav mr-auto">
-          {% if request.user.is_authenticated %}
           <li class="nav-item{% url 'index' as curpage %}{% if request.path == curpage %} active{% endif %}">
-            <a class="nav-link" href="{% url 'index' %}">Datasets</a>
+            <a class="nav-link" href="{% url 'index' %}">Home</a>
+          </li>
+          {% if request.user.is_authenticated %}
+          <li class="nav-item{% url 'create_dataset' as curpage %}{% if request.path == curpage %} active{% endif %}">
+            <a class="nav-link" href="{% url 'create_dataset' %}">Create Dataset</a>
           </li>
           {% endif %}
           <li class="nav-item{% url 'about' as curpage %}{% if request.path == curpage %} active{% endif %}">
