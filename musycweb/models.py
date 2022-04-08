@@ -14,30 +14,14 @@ class Profile(models.Model):
     organization = models.TextField(default=None, null=True)
     accept_eula = models.BooleanField(default=False)
 
-# class Project(models.Model):
-#     id = models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')
-#     owner = models.ForeignKey(settings.AUTH_USER_MODEL,
-#                               on_delete=models.CASCADE)
-#     name = models.CharField(max_length=100)
-#     creation_date = models.DateTimeField(auto_now_add=True)
-#     deleted_date = models.DateTimeField(null=True, default=None, editable=False)
-#     description = models.TextField()
-#     num_datasets =  models.IntegerField()
-#     shared_with = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="shared")
-    
-#     def __str__(self):
-#         return f'[{self.id}] {self.name} <{self.owner.email}> [{self.shared_with}]'
-
 
 class Dataset(models.Model):
     ORIENTATION_CHOICES = (
         (0, 'Emax>E0'),
         (1, 'Emax<E0')
     )
-    id = models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')
     owner = models.ForeignKey(settings.AUTH_USER_MODEL,
                               on_delete=models.CASCADE)
-    # project = models.ForeignKey(Project, on_delete=models.CASCADE, default=1)
     name = models.TextField()
     creation_date = models.DateTimeField(auto_now_add=True)
     deleted_date = models.DateTimeField(null=True, default=None, editable=False)
@@ -54,7 +38,7 @@ class Dataset(models.Model):
     e0_upper = models.FloatField(default=None, null=True, editable=False)
 
     def __str__(self):
-        return f'[{self.id}] {self.name} <{self.owner.email}>' #[P:{self.project.id}] {self.project.name}'
+        return f'[{self.id}] {self.name} <{self.owner.email}>'
 
 
 class DatasetTask(models.Model):
